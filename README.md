@@ -1,194 +1,87 @@
-# BestCarRental.com.ua
-🔵 FRONTEND (клієнтська частина)
+# DriveAway - Car Rental Platform
 
-1️⃣ Публічна частина (для клієнтів)
+DriveAway is a modern car rental platform built with a FastAPI backend and a clean, responsive frontend using vanilla HTML, CSS, and JavaScript.
 
-🔹 Головна сторінка
-	•	пошук авто (дата початку / дата повернення)
-	•	місто / пункт видачі
-	•	фільтри
-	•	акції
+## 🚀 Features
 
-⸻
+- **Dynamic Car Listings**: Browse available vehicles with category and price information.
+- **Detailed Product Pages**: View specific car details, specifications, and select additional services.
+- **User Profile Management**:
+  - **Personal Information**: View and manage account details.
+  - **Booking History**: Track upcoming and completed rentals.
+  - **Payment Methods**: Manage saved cards with a dedicated modal for adding new ones.
+- **Simulated Authorization**: A secure-feeling login experience using modal windows and session storage.
+- **Responsive Design**: Optimized for both desktop and mobile devices.
+- **Clean UI**: Modern aesthetic with subtle animations and clear typography.
 
-🔹 Каталог авто
-	•	фільтри:
-	•	клас (економ, SUV, преміум)
-	•	коробка передач
-	•	паливо
-	•	ціна
-	•	сортування
-	•	пагінація
+## 🛠️ Tech Stack
 
-⸻
+- **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python)
+- **Frontend**: 
+  - Vanilla HTML5
+  - Modular CSS3 (Split by feature for maintainability)
+  - Vanilla JavaScript (ES6+)
 
-🔹 Сторінка авто
-	•	фото
-	•	характеристики
-	•	ціна за добу
-	•	доступність по датах
-	•	кнопка “Забронювати”
+## 📂 Project Structure
 
-⸻
+```text
+├── backend/
+│   ├── main.py             # FastAPI application and routes
+│   └── requirements.txt    # Python dependencies
+├── frontend/
+│   ├── static/
+│   │   ├── css/            # Split CSS files
+│   │   │   ├── common.css  # Global styles and utilities
+│   │   │   ├── home.css    # Home page specific styles
+│   │   │   ├── product.css # Product page specific styles
+│   │   │   ├── profile.css # Profile page specific styles
+│   │   │   ├── about.css   # About page specific styles
+│   │   │   └── modals.css  # Shared modal styles
+│   │   └── js/
+│   │       └── script.js   # Frontend logic and interactions
+│   │   └── Images/
+│   ├── index.html          # Home page
+│   ├── product.html        # Car details page
+│   ├── profile.html        # User profile page
+│   └── about.html          # About Us page
+└── README.MD               # Project documentation
+```
 
-🔹 Бронювання
-	•	вибір дат
-	•	розрахунок вартості
-	•	додаткові опції (страхування, дитяче крісло)
-	•	введення даних клієнта
-	•	онлайн-оплата
+## 🔌 API Endpoints
 
-⸻
+### Frontend Routes
+- `GET /`: Serves the Home page (`index.html`).
+- `GET /product`: Serves the Car Details page (`product.html`).
+- `GET /profile`: Serves the User Profile page (`profile.html`).
+- `GET /about`: Serves the About Us page (`about.html`).
 
-🔹 Кабінет користувача
-	•	історія бронювань
-	•	активні замовлення
-	•	редагування профілю
-	•	скасування бронювання
+### Data Endpoints
+- `GET /api/cars`: Returns a JSON list of available cars with their IDs, names, and daily rates.
 
-⸻
+## 🏁 Getting Started
 
-🔹 Сторінки довіри
-	•	умови оренди
-	•	політика конфіденційності
-	•	FAQ
-	•	контакти
+### Prerequisites
 
-⸻
+- Python 3.7+
+- FastAPI
+- Uvicorn
 
-🔴 BACKEND (серверна логіка, Python)
+### Installation
 
-(Flask / Django / FastAPI)
+1. Install the required dependencies:
+   ```bash
+   pip install -r backend/requirements.txt
+   ```
 
-⸻
+2. Run the development server:
+   ```bash
+   python backend/main.py
+   ```
 
-1️⃣ Архітектурні блоки
+3. Open your browser and navigate to `http://localhost:8000`.
 
-🧱 1. Auth & Users
-	•	реєстрація
-	•	логін
-	•	JWT / session
-	•	ролі:
-	•	клієнт
-	•	адміністратор
-	•	менеджер
+## 📝 Usage Notes
 
-⸻
-
-🚗 2. Cars Module
-	•	CRUD авто
-	•	статус авто:
-	•	доступне
-	•	заброньоване
-	•	в ремонті
-	•	фото
-	•	ціни
-
-⸻
-
-📅 3. Booking Module (серце системи)
-	•	перевірка доступності
-	•	блокування авто на період
-	•	розрахунок вартості
-	•	скасування
-	•	зміна дат
-
-⚠️ Важливо:
-
-продумати захист від подвійного бронювання (race condition)
-
-⸻
-
-💳 4. Payments
-	•	інтеграція з LiqPay / Stripe
-	•	статуси платежів
-	•	webhook-и
-
-⸻
-
-🗄 5. Database design (MySQL/PostgreSQL)
-
-Основні таблиці:
-	•	users
-	•	cars
-	•	bookings
-	•	payments
-	•	car_images
-	•	additional_services
-
-⸻
-
-🔒 6. Безпека
-	•	CORS
-	•	rate limiting
-	•	валідація даних
-	•	CSRF
-	•	перевірка доступу по ролях
-
-⸻
-
-📊 7. Admin Panel
-	•	управління авто
-	•	перегляд бронювань
-	•	зміна статусів
-	•	звіти
-	•	фінансова статистика
-
-⸻
-
-📬 8. Notifications
-	•	email підтвердження
-	•	SMS
-	•	нагадування про повернення
-
-⸻
-
-🟣 Додаткові технічні блоки
-
-🔹 API Layer
-	•	REST API
-	•	або GraphQL
-	•	документація (Swagger)
-
-⸻
-
-🔹 Background Tasks
-	•	Celery / Redis
-	•	обробка оплат
-	•	авто-скасування неоплачених бронювань
-
-⸻
-
-🔹 Logging & Monitoring
-	•	логування помилок
-	•	аудит дій
-	•	метрики
-
-⸻
-
-Найкритичніші частини системи
-	1.	Логіка перевірки дат
-	2.	Захист від подвійного бронювання
-	3.	Оплати
-	4.	Ролі та права доступу
-	5.	Міграції БД
-
-⸻
-
-📌 Якщо коротко
-
-Frontend:
-	•	пошук
-	•	каталог
-	•	бронювання
-	•	кабінет
-	•	адмінка
-
-Backend:
-	•	auth
-	•	авто
-	•	бронювання
-	•	оплати
-	•	база даних
-	•	безпека
-
+- **Authorization**: The "Profile" button triggers an authorization modal. Use any email/password to "log in" (simulated via `sessionStorage`).
+- **Navigation**: Use the header links to move between Home, About, and Profile pages.
+- **Modals**: The "Add New Payment Method" button on the Profile -> Payment tab opens a functional modal window.
