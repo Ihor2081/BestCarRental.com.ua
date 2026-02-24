@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - DriveAway</title>
+  <link rel="stylesheet" href="/static/css/common.css">
+  <link rel="stylesheet" href="/static/css/admin.css">
+  <link rel="stylesheet" href="/static/css/modals.css">
+</head>
+<body class="bg-gray-50">
+
+<!-- HEADER -->
+<header class="header">
+  <div class="container nav">
+    <div class="logo">🚗 DriveAway</div>
+
+    <nav>
+      <a href="/">Home</a>
+      <a href="/about">About</a>
+      <button class="profile-btn" id="headerProfileBtn">Profile</button>
+    </nav>
+  </div>
+</header>
+
+<main class="container py-8">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold">Admin Dashboard</h1>
+    <p class="text-gray-500">Manage your car rental business</p>
+  </div>
+
+  <!-- ADMIN TABS -->
+  <div class="tabs-container mb-8">
+    <div class="tabs-nav">
+      <button class="tab-btn active" data-tab="adminDashboard" type="button" data-handled="true">
+        <i class="lucide-layout-dashboard mr-2"></i> Dashboard
+      </button>
+      <button class="tab-btn" data-tab="adminFleet" type="button" data-handled="true">
+        <i class="lucide-car mr-2"></i> Fleet
+      </button>
+      <button class="tab-btn" data-tab="adminBookings" type="button" data-handled="true">
+        <i class="lucide-calendar mr-2"></i> Bookings
+      </button>
+      <button class="tab-btn" data-tab="adminCustomers" type="button" data-handled="true">
+        <i class="lucide-users mr-2"></i> Customers
+      </button>
+      <button class="tab-btn" data-tab="adminSettings" type="button" data-handled="true">
+        <i class="lucide-settings mr-2"></i> Settings
+      </button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD TAB -->
+  <div id="adminDashboardTab" class="tab-content active">
+    <!-- STATS GRID -->
+    <div class="admin-stats-grid mb-8">
+      <div class="admin-stat-card">
+        <div class="flex justify-between items-start mb-4">
+          <div class="stat-icon-bg blue">
+            <i class="lucide-dollar-sign"></i>
+          </div>
+          <span class="trend-badge positive">+12%</span>
+        </div>
+        <div class="stat-value">$70,000</div>
+        <div class="stat-label">Monthly Revenue</div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="flex justify-between items-start mb-4">
+          <div class="stat-icon-bg green">
+            <i class="lucide-calendar"></i>
+          </div>
+          <span class="trend-badge positive">+8%</span>
+        </div>
+        <div class="stat-value">189</div>
+        <div class="stat-label">Total Bookings</div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="flex justify-between items-start mb-4">
+          <div class="stat-icon-bg purple">
+            <i class="lucide-car"></i>
+          </div>
+          <span class="total-badge">190 Total</span>
+        </div>
+        <div class="stat-value">142</div>
+        <div class="stat-label">Available Cars</div>
+      </div>
+
+      <div class="admin-stat-card">
+        <div class="flex justify-between items-start mb-4">
+          <div class="stat-icon-bg orange">
+            <i class="lucide-users"></i>
+          </div>
+          <span class="trend-badge positive">+24</span>
+        </div>
+        <div class="stat-value">1,234</div>
+        <div class="stat-label">Active Customers</div>
+      </div>
+    </div>
+
+    <!-- CHARTS GRID -->
+    <div class="charts-grid">
+      <div class="chart-container">
+        <h3 class="text-lg font-bold mb-6">Revenue & Bookings Trend</h3>
+        <div id="revenueTrendChart" class="chart-placeholder"></div>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="dot revenue"></span> revenue</span>
+          <span class="legend-item"><span class="dot bookings"></span> bookings</span>
+        </div>
+      </div>
+      <div class="chart-container">
+        <h3 class="text-lg font-bold mb-6">Fleet by Category</h3>
+        <div id="fleetCategoryChart" class="chart-placeholder"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLEET TAB -->
+  <div id="adminFleetTab" class="tab-content">
+    <div class="flex justify-between items-center mb-6">
+      <div class="search-input-container">
+        <i class="lucide-search"></i>
+        <input type="text" placeholder="Search fleet..." id="fleetSearch">
+      </div>
+      <button class="add-vehicle-btn">
+        <i class="lucide-plus mr-2"></i> Add Vehicle
+      </button>
+    </div>
+
+    <div class="admin-fleet-grid" id="adminFleetGrid">
+      <!-- Fleet cards will be injected here -->
+    </div>
+  </div>
+
+  <!-- BOOKINGS TAB -->
+  <div id="adminBookingsTab" class="tab-content">
+    <div class="flex justify-between items-center mb-6">
+      <div class="search-input-container">
+        <i class="lucide-search"></i>
+        <input type="text" placeholder="Search bookings..." id="bookingSearch">
+      </div>
+      <select class="filter-select">
+        <option>All Bookings</option>
+        <option>Upcoming</option>
+        <option>Active</option>
+        <option>Completed</option>
+      </select>
+    </div>
+
+    <div class="table-container">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Booking ID</th>
+            <th>Customer</th>
+            <th>Vehicle</th>
+            <th>Dates</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="adminBookingsTableBody">
+          <!-- Booking rows will be injected here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CUSTOMERS TAB -->
+  <div id="adminCustomersTab" class="tab-content">
+    <div class="search-input-container mb-6">
+      <i class="lucide-search"></i>
+      <input type="text" placeholder="Search customers..." id="customerSearch">
+    </div>
+
+    <div class="admin-customers-grid" id="adminCustomersGrid">
+      <!-- Customer cards will be injected here -->
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div id="adminSettingsTab" class="tab-content">
+    <div class="admin-main-card">
+      <h3 class="text-lg font-bold mb-6">Business Settings</h3>
+      
+      <div class="settings-form">
+        <div class="input-group mb-4">
+          <label>Business Name</label>
+          <input type="text" value="DriveAway Car Rentals">
+        </div>
+        <div class="input-group mb-4">
+          <label>Business Email</label>
+          <input type="email" value="admin@driveaway.com">
+        </div>
+        <div class="input-group mb-4">
+          <label>Business Phone</label>
+          <input type="text" value="+1 (555) 123-4567">
+        </div>
+        <div class="input-group mb-6">
+          <label>Business Address</label>
+          <input type="text" value="123 Main Street, Los Angeles, CA 90001">
+        </div>
+        
+        <button class="save-changes-btn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/static/js/icons.js"></script>
+<script src="/static/js/script.js"></script>
+<script src="/static/js/admin.js"></script>
+</body>
+</html>
