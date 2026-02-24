@@ -37,7 +37,17 @@ DriveAway is a modern car rental platform built with a FastAPI backend and a cle
 ├── frontend/
 │   ├── static/
 │   │   ├── css/            # Split CSS files
+│   │   │   ├── common.css  # Global styles and utilities
+│   │   │   ├── home.css    # Home page specific styles
+│   │   │   ├── product.css # Product page specific styles
+│   │   │   ├── profile.css # Profile page specific styles
+│   │   │   ├── about.css   # About page specific styles
+│   │   │   ├── admin.css   # Admin dashboard specific styles
+│   │   │   └── modals.css  # Shared modal styles
 │   │   └── js/             # Frontend logic and interactions
+│   │       ├── script.js   # Main application logic
+│   │       ├── admin.js    # Admin dashboard logic
+│   │       └── icons.js    # Lucide icons initialization
 │   ├── index.html          # Home page
 │   ├── product.html        # Car details page
 │   ├── profile.html        # User profile page
