@@ -1,6 +1,6 @@
-# DriveAway - Car Rental Platform
+# DriveAway - Premium Car Rental Platform
 
-DriveAway is a modern car rental platform built with a FastAPI backend and a clean, responsive frontend using vanilla HTML, CSS, and JavaScript.
+DriveAway is a modern, full-stack car rental platform built with **Next.js** for the frontend and **FastAPI** for the backend. It features a sleek, responsive design and a robust API for managing vehicle listings and bookings.
 
 ## 🚀 Features
 
@@ -17,107 +17,99 @@ DriveAway is a modern car rental platform built with a FastAPI backend and a cle
 ## 🛠️ Tech Stack
 
 - **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python)
-- **Database**: [MySQL](https://www.mysql.com/) (via XAMPP)
+- **Database**: [MySQL](https://www.mysql.com/)
 - **ORM**: [SQLAlchemy](https://www.sqlalchemy.org/) (Async)
 - **Frontend**: 
-  - Vanilla HTML5
-  - Modular CSS3 (Split by feature for maintainability)
-  - Vanilla JavaScript (ES6+)
-- **Icons**: [Lucide Icons](https://lucide.dev/)
+  - [Next.js](https://nextjs.org/) (React Framework)
+  - [Tailwind CSS](https://tailwindcss.com/) (Styling)
+  - [Framer Motion](https://www.framer.com/motion/) (Animations)
+  - [Lucide React](https://lucide.dev/) (Icons)
 
 ## 📂 Project Structure
 
 ```text
 ├── backend/
-│   ├── main.py             # FastAPI application and routes
-│   ├── database.py         # SQLAlchemy async engine and session setup
-│   ├── models.py           # Database models (User, Car, Deal)
-│   ├── requirements.txt    # Python dependencies (FastAPI, SQLAlchemy, aiomysql)
-│   └── .env.example        # Template for environment variables
+│   ├── main.py               # FastAPI application and API routes
+│   ├── database.py           # Async SQLAlchemy engine & session setup
+│   ├── models.py             # Database models
+│   ├── requirements.txt      # Python dependencies
+│   ├── .env.example          # Environment variables template
+
 ├── frontend/
-│   ├── static/
-│   │   ├── css/            # Split CSS files
-│   │   │   ├── common.css  # Global styles and utilities
-│   │   │   ├── home.css    # Home page specific styles
-│   │   │   ├── product.css # Product page specific styles
-│   │   │   ├── profile.css # Profile page specific styles
-│   │   │   ├── about.css   # About page specific styles
-│   │   │   ├── admin.css   # Admin dashboard specific styles
-│   │   │   └── modals.css  # Shared modal styles
-│   │   └── js/             # Frontend logic and interactions
-│   │       ├── script.js   # Main application logic
-│   │       ├── admin.js    # Admin dashboard logic
-│   │       └── icons.js    # Lucide icons initialization
-│   ├── index.html          # Home page
-│   ├── product.html        # Car details page
-│   ├── profile.html        # User profile page
-│   ├── about.html          # About Us page
-│   └── admin.html          # Admin Dashboard
-└── car_shering.sql         # DB backup
-└── README.MD               # Project documentation
+│   ├── src/
+│   │   ├── app/              # Next.js App Router (pages & layouts)
+│   │   │   ├── about/
+│   │   │   │   └── page.tsx  # About page
+│   │   │   ├── admin/
+│   │   │   │   └── page.tsx  # Admin dashboard page
+│   │   │   ├── product/
+│   │   │   │   └── page.tsx  # Product details page
+│   │   │   ├── profile/
+│   │   │   │   └── page.tsx  # User profile page
+│   │   │   ├── globals.css   # Global styles
+│   │   │   ├── layout.tsx    # Root layout
+│   │   │   └── page.tsx      # Home page
+│   │   │
+│   │   ├── components/       # Reusable React components
+│   │   │   ├── CarCard.tsx   # Car display card component
+│   │   │   └── Header.tsx    # Navigation header
+│   │   │
+│   │   └── types/
+│   │       └── index.ts      # TypeScript type definitions
+│   │
+│   ├── next-env.d.ts         # Next.js TypeScript definitions
+│   ├── next.config.js        # Next.js configuration
+│   ├── postcss.config.mjs    # PostCSS configuration
+│   ├── tailwind.config.ts    # Tailwind CSS configuration
+│   ├── tsconfig.json         # TypeScript configuration
+│   ├── package.json          # Frontend dependencies & scripts
+│   └── package-lock.json     # Frontend lockfile
+├── package.json              # Root workspace configuration
+├── package-lock.json         # Root lockfile
+├── metadata.json             # Application metadata
+├── car_sharing.sql           # Database backup
+└── README.md                 # Project documentation
 ```
 
-## 🔌 API Endpoints
-
-### Frontend Routes
-- `GET /`: Serves the Home page (`index.html`).
-- `GET /product`: Serves the Car Details page (`product.html`).
-- `GET /profile`: Serves the User Profile page (`profile.html`).
-- `GET /about`: Serves the About Us page (`about.html`).
-- `GET /admin`: Serves the Admin Dashboard (`admin.html`).
-
-### Data Endpoints
-- `GET /api/cars`: Returns a JSON list of available cars from the database.
-- `GET /db-status`: Health check endpoint to verify the MySQL connection.
-
-## API Testing
-
-Once the server is running, visit:
-- **API Docs:** http://localhost:8000/docs
-- **Health Check:** http://localhost:8000/db-status
-- **Cars Data:** http://localhost:8000/api/cars
-
-## 🏁 Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- Python 3.9+
-- MySQL (XAMPP recommended)
-- `pip` (Python package manager)
+- Node.js (v18+)
+- Python (3.9+)
+- MySQL (or compatible database)
 
-### Installation & Setup
+### Installation
 
-1. **Database Setup**:
-   - Start **Apache** and **MySQL** in your XAMPP Control Panel.
-   - Open [phpMyAdmin](http://localhost/phpmyadmin/).
-   - Create a new database named `car_sharing`.
-   - Import the `car_sharing.sql` backup file into the `car_sharing` database.
+1. Install root dependencies:
+   ```bash
+   npm install
+   ```
 
-2. **Environment Configuration**:
-   - Navigate to the `backend/` directory.
-   - Create a `.env` file based on `.env.example`:
-     ```bash
-     cp backend/.env.example backend/.env
-     ```
-   - Update the `.env` file with your MySQL credentials (default XAMPP is `root` with no password).
+2. Install frontend dependencies:
+   ```bash
+   npm install --workspace=frontend
+   ```
 
-3. **Install Dependencies**:
+3. Install backend dependencies:
    ```bash
    pip install -r backend/requirements.txt
    ```
 
-4. **Run the Application**:
-   ```bash
-   python backend/main.py
-   ```
+### Running the Application
 
-5. **Verify Connection**:
-   - Open `http://localhost:8000/db-status` in your browser to ensure the database is connected.
-   - Navigate to `http://localhost:8000` to use the platform.
+To start both the frontend and backend in development mode:
 
-## 📝 Usage Notes
+```bash
+npm run dev
+```
 
-- **Authorization**: The "Profile" button triggers an authorization modal. Use any email/password to "log in" (simulated via `sessionStorage`).
-- **Admin page**: Use link `http://localhost:8000/admin` to check out admin page.
-- **Navigation**: Use the header links to move between Home, About, and Profile pages.
-- **Modals**: The "Add New Payment Method" button on the Profile -> Payment tab opens a functional modal window.
+- **Frontend**: [http://localhost:3000](http://localhost:3000)
+- **Backend API**: [http://localhost:8000](http://localhost:8000)
+- **API Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Health Check:** http://localhost:8000/db-status
+- **Cars Data:** http://localhost:8000/api/cars
+
+## 📄 License
+
+This project is private and intended for internal use.
