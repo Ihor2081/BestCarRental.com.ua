@@ -3,13 +3,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from sqlalchemy.future import select
 import os
+from dotenv import load_dotenv
 
 from database import get_db, engine, Base
 from models import Car
+from auth import router as auth_router
+
+load_dotenv()
 
 app = FastAPI(title="Car Sharing API")
 
-# --- API Endpoints ---
+# Include routers
+app.include_router(auth_router)
+
+# --- Car Endpoints ---
 
 @app.get("/api/cars")
 async def get_cars(db: AsyncSession = Depends(get_db)):
@@ -28,20 +35,18 @@ async def get_cars(db: AsyncSession = Depends(get_db)):
                 {"id": 6, "name": "BMW Z4 Roadster", "category": "Convertible", "price": 200, "img": "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?q=80&w=2070&auto=format&fit=crop"}
             ]
             
-        # Transform SQLAlchemy objects to dicts matching frontend expectations
         formatted_cars = []
         for car in cars:
             formatted_cars.append({
                 "id": car.id,
                 "name": f"{car.brand} {car.model}",
-                "category": "Sedan", # Default or derived if possible
+                "category": "Sedan",
                 "price": float(car.price_per_day),
                 "img": car.images or "https://picsum.photos/seed/car/800/600"
             })
         return formatted_cars
     except Exception as e:
         print(f"Error fetching cars: {e}")
-        # Return mock data as fallback on error
         return [
             {"id": 1, "name": "Mercedes-Benz E-Class", "category": "Sedan", "price": 120, "img": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=2070&auto=format&fit=crop"},
             {"id": 2, "name": "Range Rover Sport", "category": "SUV", "price": 180, "img": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=2070&auto=format&fit=crop"},
@@ -53,7 +58,6 @@ async def get_cars(db: AsyncSession = Depends(get_db)):
 
 @app.get("/api/fleet")
 async def get_fleet():
-    """Mock fleet data for admin dashboard"""
     return [
         {"id": 1, "name": "Mercedes-Benz E-Class", "category": "Sedan", "price": 120, "status": "available", "bookings": 45, "img": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=2070&auto=format&fit=crop"},
         {"id": 2, "name": "Range Rover Sport", "category": "SUV", "price": 180, "status": "rented", "bookings": 32, "img": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=2070&auto=format&fit=crop"},
@@ -63,7 +67,6 @@ async def get_fleet():
 
 @app.get("/api/bookings")
 async def get_bookings():
-    """Mock bookings data for admin dashboard"""
     return [
         {"id": "B001", "customer": "John Anderson", "email": "john.anderson@email.com", "vehicle": "Mercedes-Benz E-Class", "dates": "Mar 15 - Mar 20", "total": "$600", "status": "upcoming"},
         {"id": "B002", "customer": "Sarah Miller", "email": "sarah.m@example.com", "vehicle": "Tesla Model 3", "dates": "Feb 10 - Feb 15", "total": "$475", "status": "completed"},
@@ -72,7 +75,6 @@ async def get_bookings():
 
 @app.get("/api/customers")
 async def get_customers():
-    """Mock customers data for admin dashboard"""
     return [
         {"id": 1, "name": "John Anderson", "email": "john.anderson@email.com", "bookings": 12, "spent": "$4,250", "since": "Jan 2024"},
         {"id": 2, "name": "Sarah Miller", "email": "sarah.m@example.com", "bookings": 5, "spent": "$1,850", "since": "Mar 2024"},
@@ -81,9 +83,7 @@ async def get_customers():
 
 @app.get("/db-status")
 async def db_status(db: AsyncSession = Depends(get_db)):
-    """Health check endpoint to verify database connection"""
     try:
-        # Execute a simple test query
         result = await db.execute(text("SELECT 1"))
         row = result.fetchone()
         if row and row[0] == 1:
