@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
-  User, Mail, Phone, MapPin, CreditCard, 
+  User as UserIcon, Mail, Phone, MapPin, CreditCard, 
   History, Settings, LogOut, Plus, ShieldCheck 
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
@@ -13,37 +14,43 @@ function cn(...inputs: ClassValue[]) {
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("personal");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const user = sessionStorage.getItem("user");
-    if (user) setIsLoggedIn(true);
-    else setShowLoginModal(true);
-  }, []);
+    const checkAuth = () => {
+      const storedUser = localStorage.getItem("user");
+      const token = localStorage.getItem("token");
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    sessionStorage.setItem("user", "true");
-    setIsLoggedIn(true);
-    setShowLoginModal(false);
+      if (!token || !storedUser) {
+        router.push("/");
+        return;
+      }
+
+      setUser(JSON.parse(storedUser));
+      setLoading(false);
+    };
+
+    checkAuth();
+
+    // Listen for auth changes
+    window.addEventListener("auth-change", checkAuth);
+    return () => window.removeEventListener("auth-change", checkAuth);
+  }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.dispatchEvent(new Event("auth-change"));
+    router.push("/");
   };
 
-  if (!isLoggedIn) {
+  if (loading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        {showLoginModal && (
-          <div className="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full border border-gray-100">
-            <h2 className="text-3xl font-bold mb-2">Welcome Back</h2>
-            <p className="text-gray-500 mb-8">Please sign in to access your profile</p>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <input type="email" placeholder="Email Address" required className="w-full p-4 bg-gray-50 rounded-2xl outline-none border border-transparent focus:border-black transition-all" />
-              <input type="password" placeholder="Password" required className="w-full p-4 bg-gray-50 rounded-2xl outline-none border border-transparent focus:border-black transition-all" />
-              <button className="w-full bg-black text-white py-4 rounded-2xl font-bold hover:bg-gray-900 transition-all">Sign In</button>
-            </form>
-          </div>
-        )}
+        <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -57,8 +64,8 @@ export default function ProfilePage() {
             <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden border-4 border-gray-50">
               <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=1000&auto=format&fit=crop" alt="Avatar" className="w-full h-full object-cover" />
             </div>
-            <h2 className="text-2xl font-bold">John Doe</h2>
-            <p className="text-gray-500 text-sm mb-6">Member since Jan 2024</p>
+            <h2 className="text-2xl font-bold">{user?.name || "User"}</h2>
+            <p className="text-gray-500 text-sm mb-6">Member since {new Date().getFullYear()}</p>
             <div className="flex justify-center gap-2">
               <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3" /> Verified
@@ -68,7 +75,7 @@ export default function ProfilePage() {
 
           <nav className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 space-y-2">
             {[
-              { id: "personal", icon: User, label: "Personal Info" },
+              { id: "personal", icon: UserIcon, label: "Personal Info" },
               { id: "bookings", icon: History, label: "Booking History" },
               { id: "payment", icon: CreditCard, label: "Payment Methods" },
               { id: "settings", icon: Settings, label: "Account Settings" },
@@ -86,7 +93,7 @@ export default function ProfilePage() {
               </button>
             ))}
             <button 
-              onClick={() => { sessionStorage.removeItem("user"); setIsLoggedIn(false); }}
+              onClick={handleLogout}
               className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold text-red-500 hover:bg-red-50 transition-all"
             >
               <LogOut className="w-5 h-5" />
@@ -105,29 +112,22 @@ export default function ProfilePage() {
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Full Name</label>
                     <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                      <User className="w-5 h-5 text-gray-400" />
-                      <span className="font-semibold">John Doe</span>
+                      <UserIcon className="w-5 h-5 text-gray-400" />
+                      <span className="font-semibold">{user?.name}</span>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Email Address</label>
                     <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                       <Mail className="w-5 h-5 text-gray-400" />
-                      <span className="font-semibold">john.doe@example.com</span>
+                      <span className="font-semibold">{user?.email}</span>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Phone Number</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Role</label>
                     <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                      <Phone className="w-5 h-5 text-gray-400" />
-                      <span className="font-semibold">+1 (555) 123-4567</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Address</label>
-                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                      <MapPin className="w-5 h-5 text-gray-400" />
-                      <span className="font-semibold">123 Luxury Ave, Beverly Hills, CA</span>
+                      <ShieldCheck className="w-5 h-5 text-gray-400" />
+                      <span className="font-semibold capitalize">{user?.role}</span>
                     </div>
                   </div>
                 </div>
@@ -205,7 +205,7 @@ export default function ProfilePage() {
                     <div className="flex justify-between items-end">
                       <div>
                         <div className="text-[10px] uppercase opacity-50 font-bold mb-1">Card Holder</div>
-                        <div className="font-bold tracking-wide">JOHN DOE</div>
+                        <div className="font-bold tracking-wide">{user?.name?.toUpperCase() || "USER"}</div>
                       </div>
                       <div className="text-right">
                         <div className="text-[10px] uppercase opacity-50 font-bold mb-1">Expires</div>

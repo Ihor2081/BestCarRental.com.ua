@@ -10,13 +10,15 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
   - **Personal Information**: View and manage account details.
   - **Booking History**: Track upcoming and completed rentals.
   - **Payment Methods**: Manage saved cards with a dedicated modal for adding new ones.
-- **Simulated Authorization**: A secure-feeling login experience using modal windows and session storage.
+- **JWT-Based Authentication**: Secure user registration and login using JWT tokens and bcrypt password hashing.
+- **Protected Routes**: User profiles and booking features are protected and require a valid session.
+- **Dynamic UI**: Header and navigation adapt in real-time to the user's authentication state.
 - **Responsive Design**: Optimized for both desktop and mobile devices.
 - **Clean UI**: Modern aesthetic with subtle animations and clear typography.
 
 ## 🛠️ Tech Stack
 
-- **Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python)
+**Backend**: [FastAPI](https://fastapi.tiangolo.com/) (Python), [Passlib](https://passlib.readthedocs.io/) (Auth), [python-jose](https://python-jose.readthedocs.io/) (JWT)
 - **Database**: [MySQL](https://www.mysql.com/)
 - **ORM**: [SQLAlchemy](https://www.sqlalchemy.org/) (Async)
 - **Frontend**: 
@@ -25,11 +27,29 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
   - [Framer Motion](https://www.framer.com/motion/) (Animations)
   - [Lucide React](https://lucide.dev/) (Icons)
 
+## 📡 API Endpoints
+
+### Authentication (`/api/auth`)
+- `POST /register`: Register a new user account.
+- `POST /login`: Authenticate user and return a JWT access token.
+
+### Vehicles & Fleet
+- `GET /api/cars`: Retrieve a list of all available cars for rental.
+- `GET /api/fleet`: Get detailed fleet information (Admin).
+
+### Management (Admin)
+- `GET /api/bookings`: List all vehicle bookings.
+- `GET /api/customers`: List all registered customers and their stats.
+
+### System
+- `GET /db-status`: Check the health of the MySQL database connection.
+
 ## 📂 Project Structure
 
 ```text
 ├── backend/
 │   ├── main.py               # FastAPI application and API routes
+│   ├── auth.py               # Contains the authentication logic
 │   ├── database.py           # Async SQLAlchemy engine & session setup
 │   ├── models.py             # Database models
 │   ├── requirements.txt      # Python dependencies
@@ -52,6 +72,7 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 │   │   │
 │   │   ├── components/       # Reusable React components
 │   │   │   ├── CarCard.tsx   # Car display card component
+│   │   │   ├── AuthModal.tsx # A unified modal for user registration and login.
 │   │   │   └── Header.tsx    # Navigation header
 │   │   │
 │   │   └── types/

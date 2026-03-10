@@ -1,11 +1,43 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, LogOut } from "lucide-react";
+import AuthModal from "./AuthModal";
 
 export default function Header() {
   const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem("token");
+      setIsAuthorized(!!token);
+    };
+
+    checkAuth();
+
+    // Listen for storage changes
+    window.addEventListener("storage", checkAuth);
+    
+    // Custom event for same-window updates
+    window.addEventListener("auth-change", checkAuth);
+
+    return () => {
+      window.removeEventListener("storage", checkAuth);
+      window.removeEventListener("auth-change", checkAuth);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setIsAuthorized(false);
+    router.push("/");
+    window.dispatchEvent(new Event("auth-change"));
+  };
 
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
@@ -20,20 +52,50 @@ export default function Header() {
         <nav className="hidden md:flex items-center gap-8">
           <Link href="/" className="font-semibold text-gray-600 hover:text-black transition-colors">Home</Link>
           <Link href="/about" className="font-semibold text-gray-600 hover:text-black transition-colors">About</Link>
-          <Link href="/profile" className="font-semibold text-gray-600 hover:text-black transition-colors">Profile</Link>
-          <Link href="/admin" className="font-semibold text-gray-600 hover:text-black transition-colors">Admin</Link>
+          {/* Admin and Profile links removed from main nav as requested */}
         </nav>
 
         <div className="flex items-center gap-4">
-          <button 
-            onClick={() => router.push("/profile")}
-            className="flex items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-xl font-bold hover:bg-gray-100 transition-colors"
-          >
-            <User className="w-4 h-4" />
-            <span>Sign In</span>
-          </button>
+          {isAuthorized ? (
+            <div className="flex items-center gap-4">
+              <Link 
+                href="/profile" 
+                className="flex items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-xl font-bold hover:bg-gray-100 transition-colors"
+              >
+                <User className="w-4 h-4" />
+                <span>My Profile</span>
+              </Link>
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-red-500 font-bold hover:text-red-600 transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={() => setShowAuthModal(true)}
+              className="flex items-center gap-2 bg-black text-white px-6 py-2.5 rounded-xl font-bold hover:bg-gray-900 transition-colors"
+            >
+              <User className="w-4 h-4" />
+              <span>Log in</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {showAuthModal && (
+        <AuthModal 
+          onClose={() => setShowAuthModal(false)} 
+          onSuccess={() => {
+            setIsAuthorized(true);
+            setShowAuthModal(false);
+            window.dispatchEvent(new Event("auth-change"));
+            router.push("/profile");
+          }} 
+        />
+      )}
     </header>
   );
 }
