@@ -1,83 +1,211 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
   LayoutDashboard, Car, Calendar, Users, Settings, 
-  DollarSign, Search, Plus, Pencil, Trash2, Eye 
+  DollarSign, Search, Plus, Pencil, Trash2, Eye,
+  TrendingUp, BarChart3, PieChart, Save, Lock
 } from "lucide-react";
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, 
-  Tooltip, Legend, ResponsiveContainer, BarChart, Bar 
+  Tooltip, Legend, ResponsiveContainer, BarChart, Bar,
+  Cell, PieChart as RePieChart, Pie
 } from 'recharts';
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Car as CarType, Booking, Customer } from "@/types";
+import { Car as CarType, Booking, Customer, DashboardStats, Settings as SettingsType } from "@/types";
+import CarModal from "@/components/admin/CarModal";
+import CustomerDetailModal from "@/components/admin/CustomerDetailModal";
+import ChangePasswordModal from "@/components/admin/ChangePasswordModal";
+import SupportModal from "@/components/admin/SupportModal";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const revenueData = [
-  { month: 'Jan', revenue: 45000, bookings: 120 },
-  { month: 'Feb', revenue: 52000, bookings: 140 },
-  { month: 'Mar', revenue: 48000, bookings: 130 },
-  { month: 'Apr', revenue: 62000, bookings: 170 },
-  { month: 'May', revenue: 58000, bookings: 160 },
-  { month: 'Jun', revenue: 70000, bookings: 189 }
-];
-
-const fleetData = [
-  { category: 'Sedan', count: 45 },
-  { category: 'SUV', count: 38 },
-  { category: 'Sports', count: 12 },
-  { category: 'Electric', count: 28 },
-  { category: 'Compact', count: 52 },
-  { category: 'Convertible', count: 15 }
-];
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function AdminPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("adminDashboard");
+  const [loading, setLoading] = useState(true);
+  
+  // Data states
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [fleet, setFleet] = useState<CarType[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [settings, setSettings] = useState<SettingsType | null>(null);
+
+  // Filter states
+  const [fleetSearch, setFleetSearch] = useState("");
+  const [bookingSearch, setBookingSearch] = useState("");
+  const [bookingStatus, setBookingStatus] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
+
+  // Modal states
+  const [showCarModal, setShowCarModal] = useState(false);
+  const [editingCar, setEditingCar] = useState<CarType | undefined>(undefined);
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        router.push("/");
+        return;
+      }
+
+      const headers = { "Authorization": `Bearer ${token}` };
+      
+      const [statsRes, fleetRes, bookingsRes, customersRes, settingsRes] = await Promise.all([
+        fetch("/api/admin/dashboard", { headers }),
+        fetch("/api/admin/cars", { headers }),
+        fetch("/api/admin/bookings", { headers }),
+        fetch("/api/admin/users", { headers }),
+        fetch("/api/admin/settings", { headers })
+      ]);
+      
+      if (statsRes.status === 403 || fleetRes.status === 403) {
+        router.push("/");
+        return;
+      }
+
+      const [statsData, fleetData, bookingsData, customersData, settingsData] = await Promise.all([
+        statsRes.json(),
+        fleetRes.json(),
+        bookingsRes.json(),
+        customersRes.json(),
+        settingsRes.json()
+      ]);
+
+      setStats(statsData);
+      setFleet(fleetData);
+      setBookings(bookingsData);
+      setCustomers(customersData);
+      setSettings(settingsData);
+    } catch (error) {
+      console.error("Error fetching admin data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const [fleetRes, bookingsRes, customersRes] = await Promise.all([
-          fetch("/api/fleet"),
-          fetch("/api/bookings"),
-          fetch("/api/customers")
-        ]);
-        
-        const [fleetData, bookingsData, customersData] = await Promise.all([
-          fleetRes.json(),
-          bookingsRes.json(),
-          customersRes.json()
-        ]);
-
-        if (Array.isArray(fleetData)) setFleet(fleetData);
-        if (Array.isArray(bookingsData)) setBookings(bookingsData);
-        if (Array.isArray(customersData)) setCustomers(customersData);
-      } catch (error) {
-        console.error("Error fetching admin data:", error);
-      }
-    }
     fetchData();
   }, []);
 
+  const handleDeleteCar = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this vehicle?")) return;
+    
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/admin/cars/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        alert(data.detail || "Failed to delete car");
+        return;
+      }
+      
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting car:", error);
+    }
+  };
+
+  const handleUpdateSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!settings) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` 
+        },
+        body: JSON.stringify(settings)
+      });
+      
+      if (response.ok) {
+        alert("Settings updated successfully!");
+      }
+    } catch (error) {
+      console.error("Error updating settings:", error);
+    }
+  };
+
+  const viewCustomerDetails = async (id: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/admin/users/${id}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      const data = await response.json();
+      setSelectedCustomer(data);
+      setShowCustomerModal(true);
+    } catch (error) {
+      console.error("Error fetching customer details:", error);
+    }
+  };
+
+  // Filtered data
+  const filteredFleet = fleet.filter(car => 
+    `${car.brand} ${car.model}`.toLowerCase().includes(fleetSearch.toLowerCase()) ||
+    car.license_plate.toLowerCase().includes(fleetSearch.toLowerCase())
+  );
+
+  const filteredBookings = bookings.filter(b => {
+    const matchesSearch = b.customer_name.toLowerCase().includes(bookingSearch.toLowerCase()) || 
+                         b.id.toString().includes(bookingSearch);
+    const matchesStatus = bookingStatus === "" || b.status === bookingStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const filteredCustomers = customers.filter(c => 
+    c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+    c.email.toLowerCase().includes(customerSearch.toLowerCase())
+  );
+
+  if (loading && !stats) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
     <main className="container mx-auto px-4 max-w-7xl py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-gray-500">Manage your car rental business</p>
+      <div className="mb-8 flex justify-between items-end">
+        <div>
+          <h1 className="text-4xl font-black tracking-tight">Admin Dashboard</h1>
+          <p className="text-gray-500 font-medium">Manage your car rental business in real-time</p>
+        </div>
+        <div className="text-right hidden sm:block">
+          <div className="text-sm font-bold text-gray-400 uppercase tracking-widest">System Status</div>
+          <div className="flex items-center gap-2 text-emerald-500 font-black">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+            Operational
+          </div>
+        </div>
       </div>
 
       {/* ADMIN TABS */}
-      <div className="bg-gray-100 p-1.5 rounded-xl inline-block mb-8">
+      <div className="bg-gray-100 p-1.5 rounded-2xl inline-block mb-10">
         <div className="flex gap-1">
           {[
-            { id: "adminDashboard", icon: LayoutDashboard, label: "Dashboard" },
+            { id: "adminDashboard", icon: LayoutDashboard, label: "Overview" },
             { id: "adminFleet", icon: Car, label: "Fleet" },
             { id: "adminBookings", icon: Calendar, label: "Bookings" },
             { id: "adminCustomers", icon: Users, label: "Customers" },
@@ -87,8 +215,8 @@ export default function AdminPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "px-6 py-2 rounded-lg font-semibold transition-all flex items-center gap-2",
-                activeTab === tab.id ? "bg-white text-black shadow-sm" : "text-gray-500 hover:text-gray-700"
+                "px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2",
+                activeTab === tab.id ? "bg-white text-black shadow-md" : "text-gray-500 hover:text-gray-700"
               )}
             >
               <tab.icon className="w-4 h-4" />
@@ -99,69 +227,97 @@ export default function AdminPage() {
       </div>
 
       {/* DASHBOARD TAB */}
-      {activeTab === "adminDashboard" && (
-        <div className="space-y-8">
+      {activeTab === "adminDashboard" && stats && (
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* STATS GRID */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { label: "Monthly Revenue", value: "$70,000", trend: "+12%", icon: DollarSign, color: "blue" },
-              { label: "Total Bookings", value: "189", trend: "+8%", icon: Calendar, color: "green" },
-              { label: "Available Cars", value: "142", trend: "190 Total", icon: Car, color: "purple", isBadge: true },
-              { label: "Active Customers", value: "1,234", trend: "+24", icon: Users, color: "orange" },
+              { label: "Monthly Revenue", value: `$${stats.monthly_revenue.toLocaleString()}`, trend: "Live", icon: DollarSign, color: "blue" },
+              { label: "Total Bookings", value: stats.total_bookings.toString(), trend: "All Time", icon: Calendar, color: "green" },
+              { label: "Available Cars", value: stats.available_cars.toString(), trend: "Ready", icon: Car, color: "purple" },
+              { label: "Active Customers", value: stats.active_customers.toString(), trend: "Engaged", icon: Users, color: "orange" },
             ].map((stat, i) => (
-              <div key={i} className="bg-white p-6 rounded-2xl shadow-sm">
-                <div className="flex justify-between items-start mb-4">
+              <div key={i} className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-xl transition-all group">
+                <div className="flex justify-between items-start mb-6">
                   <div className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center",
+                    "w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-300",
                     stat.color === "blue" ? "bg-blue-50 text-blue-600" :
                     stat.color === "green" ? "bg-green-50 text-green-600" :
                     stat.color === "purple" ? "bg-purple-50 text-purple-600" :
                     "bg-orange-50 text-orange-600"
                   )}>
-                    <stat.icon className="w-5 h-5" />
+                    <stat.icon className="w-7 h-7" />
                   </div>
-                  <span className={cn(
-                    "px-2 py-1 rounded-lg text-xs font-bold",
-                    stat.isBadge ? "bg-gray-100 text-gray-600" : "bg-green-100 text-green-700"
-                  )}>
+                  <span className="px-3 py-1 bg-gray-50 text-gray-400 rounded-full text-[10px] font-black uppercase tracking-widest">
                     {stat.trend}
                   </span>
                 </div>
-                <div className="text-3xl font-bold mb-1">{stat.value}</div>
-                <div className="text-sm text-gray-500">{stat.label}</div>
+                <div className="text-4xl font-black mb-1">{stat.value}</div>
+                <div className="text-sm text-gray-400 font-bold uppercase tracking-tight">{stat.label}</div>
               </div>
             ))}
           </div>
 
           {/* CHARTS GRID */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6">
-            <div className="bg-white p-8 rounded-2xl shadow-sm">
-              <h3 className="text-lg font-bold mb-6">Revenue & Bookings Trend</h3>
-              <div className="h-[300px] w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8">
+            <div className="bg-white p-10 rounded-[40px] shadow-sm border border-gray-100">
+              <div className="flex justify-between items-center mb-10">
+                <h3 className="text-2xl font-black tracking-tight flex items-center gap-3">
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                  Performance Trends
+                </h3>
+                <div className="flex gap-4">
+                  <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
+                    <div className="w-3 h-3 bg-blue-600 rounded-full"></div> Revenue
+                  </div>
+                  <div className="flex items-center gap-2 text-xs font-bold text-gray-400">
+                    <div className="w-3 h-3 bg-emerald-500 rounded-full"></div> Bookings
+                  </div>
+                </div>
+              </div>
+              <div className="h-[350px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={revenueData}>
+                  <LineChart data={stats.revenue_trend.map((r, i) => ({ ...r, bookings: stats.bookings_trend[i]?.value }))}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#9ca3af'}} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#9ca3af'}} />
-                    <Tooltip />
-                    <Legend verticalAlign="top" align="center" iconType="circle" wrapperStyle={{paddingBottom: 20}} />
-                    <Line type="monotone" dataKey="revenue" stroke="#2563eb" strokeWidth={2} dot={{r: 4, fill: 'white', strokeWidth: 2}} activeDot={{r: 6}} />
-                    <Line type="monotone" dataKey="bookings" stroke="#10b981" strokeWidth={2} dot={{r: 4, fill: 'white', strokeWidth: 2}} activeDot={{r: 6}} />
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#9ca3af'}} dy={15} />
+                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700, fill: '#9ca3af'}} />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '20px' }}
+                      itemStyle={{ fontWeight: 800, fontSize: '14px' }}
+                    />
+                    <Line type="monotone" dataKey="value" name="Revenue" stroke="#2563eb" strokeWidth={4} dot={{r: 6, fill: 'white', strokeWidth: 3}} activeDot={{r: 8}} />
+                    <Line type="monotone" dataKey="bookings" name="Bookings" stroke="#10b981" strokeWidth={4} dot={{r: 6, fill: 'white', strokeWidth: 3}} activeDot={{r: 8}} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
-            <div className="bg-white p-8 rounded-2xl shadow-sm">
-              <h3 className="text-lg font-bold mb-6">Fleet by Category</h3>
-              <div className="h-[300px] w-full">
+            <div className="bg-white p-10 rounded-[40px] shadow-sm border border-gray-100">
+              <h3 className="text-2xl font-black tracking-tight mb-10 flex items-center gap-3">
+                <PieChart className="w-6 h-6 text-purple-600" />
+                Fleet Distribution
+              </h3>
+              <div className="h-[350px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={fleetData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                    <XAxis dataKey="category" axisLine={false} tickLine={false} tick={{fontSize: 10, fill: '#9ca3af'}} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#9ca3af'}} />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  </BarChart>
+                  <RePieChart>
+                    <Pie
+                      data={stats.fleet_by_category}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={80}
+                      outerRadius={120}
+                      paddingAngle={8}
+                      dataKey="count"
+                      nameKey="category"
+                    >
+                      {stats.fleet_by_category.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '20px' }}
+                    />
+                    <Legend verticalAlign="bottom" align="center" iconType="circle" />
+                  </RePieChart>
                 </ResponsiveContainer>
               </div>
             </div>
@@ -171,44 +327,70 @@ export default function AdminPage() {
 
       {/* FLEET TAB */}
       {activeTab === "adminFleet" && (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="relative flex-1 max-w-md w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
+            <div className="relative flex-1 max-w-xl w-full">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input 
                 type="text" 
-                placeholder="Search fleet..." 
-                className="w-full pl-10 pr-4 py-3 bg-gray-100 border-none rounded-xl outline-none text-sm"
+                placeholder="Search by brand, model or license plate..." 
+                value={fleetSearch}
+                onChange={(e) => setFleetSearch(e.target.value)}
+                className="w-full pl-14 pr-6 py-5 bg-white border border-gray-100 rounded-[24px] outline-none text-sm font-bold shadow-sm focus:shadow-md transition-all"
               />
             </div>
-            <button className="bg-black text-white px-6 py-3 rounded-lg font-bold flex items-center gap-2 hover:bg-gray-900 transition-colors">
-              <Plus className="w-4 h-4" /> Add Vehicle
+            <button 
+              onClick={() => { setEditingCar(undefined); setShowCarModal(true); }}
+              className="bg-black text-white px-8 py-5 rounded-[24px] font-black flex items-center gap-3 hover:bg-gray-900 transition-all shadow-lg hover:shadow-black/20"
+            >
+              <Plus className="w-6 h-6" /> Add New Vehicle
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {fleet.map((car) => (
-              <div key={car.id} className="bg-white rounded-2xl p-5 flex gap-6 shadow-sm">
-                <img src={car.img} alt={car.name} className="w-32 h-20 object-cover rounded-lg" referrerPolicy="no-referrer" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {filteredFleet.map((car) => (
+              <div key={car.id} className="bg-white rounded-[32px] p-8 flex flex-col sm:flex-row gap-8 shadow-sm border border-gray-100 hover:shadow-xl transition-all group">
+                <div className="w-full sm:w-48 h-32 bg-gray-50 rounded-2xl overflow-hidden">
+                  <img 
+                    src={car.images || "https://picsum.photos/seed/car/800/600"} 
+                    alt={car.model} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                    referrerPolicy="no-referrer" 
+                  />
+                </div>
                 <div className="flex-1">
-                  <div className="flex justify-between items-start mb-2">
+                  <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h4 className="font-bold">{car.name}</h4>
-                      <div className="text-xs text-gray-500">{car.category}</div>
+                      <h4 className="text-xl font-black tracking-tight">{car.brand} {car.model}</h4>
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">{car.license_plate}</div>
                     </div>
-                    <span className={cn("status-tag capitalize", car.status)}>{car.status}</span>
+                    <span className={cn(
+                      "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest",
+                      car.status === 'available' ? 'bg-emerald-50 text-emerald-600' :
+                      car.status === 'reserved' ? 'bg-blue-50 text-blue-600' :
+                      car.status === 'in_service' ? 'bg-orange-50 text-orange-600' :
+                      'bg-red-50 text-red-600'
+                    )}>
+                      {car.status.replace('_', ' ')}
+                    </span>
                   </div>
                   <div className="flex justify-between items-end">
                     <div>
-                      <div className="font-bold">${car.price}</div>
-                      <div className="text-xs text-gray-400">{car.bookings} bookings</div>
+                      <div className="text-2xl font-black">${car.price_per_day} <span className="text-xs text-gray-400 font-bold">/ day</span></div>
+                      <div className="text-xs text-gray-400 font-bold mt-1">{car.bookings_count} total bookings</div>
                     </div>
-                    <div className="flex gap-2">
-                      <button className="w-8 h-8 border border-gray-200 rounded-lg flex items-center justify-center text-gray-500 hover:text-blue-600 hover:border-blue-200 transition-colors">
-                        <Pencil className="w-4 h-4" />
+                    <div className="flex gap-3">
+                      <button 
+                        onClick={() => { setEditingCar(car); setShowCarModal(true); }}
+                        className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                      >
+                        <Pencil className="w-5 h-5" />
                       </button>
-                      <button className="w-8 h-8 border border-gray-200 rounded-lg flex items-center justify-center text-gray-500 hover:text-red-600 hover:border-red-200 transition-colors">
-                        <Trash2 className="w-4 h-4" />
+                      <button 
+                        onClick={() => handleDeleteCar(car.id)}
+                        className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"
+                      >
+                        <Trash2 className="w-5 h-5" />
                       </button>
                     </div>
                   </div>
@@ -221,58 +403,67 @@ export default function AdminPage() {
 
       {/* BOOKINGS TAB */}
       {activeTab === "adminBookings" && (
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="relative flex-1 max-w-md w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
+            <div className="relative flex-1 max-w-xl w-full">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input 
                 type="text" 
-                placeholder="Search bookings..." 
-                className="w-full pl-10 pr-4 py-3 bg-gray-100 border-none rounded-xl outline-none text-sm"
+                placeholder="Search by customer name or booking ID..." 
+                value={bookingSearch}
+                onChange={(e) => setBookingSearch(e.target.value)}
+                className="w-full pl-14 pr-6 py-5 bg-white border border-gray-100 rounded-[24px] outline-none text-sm font-bold shadow-sm focus:shadow-md transition-all"
               />
             </div>
-            <select className="px-4 py-3 rounded-xl border border-gray-200 bg-white outline-none text-sm">
-              <option>All Bookings</option>
-              <option>Upcoming</option>
-              <option>Active</option>
-              <option>Completed</option>
+            <select 
+              value={bookingStatus}
+              onChange={(e) => setBookingStatus(e.target.value)}
+              className="px-8 py-5 rounded-[24px] border border-gray-100 bg-white outline-none text-sm font-bold shadow-sm cursor-pointer"
+            >
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </div>
 
-          <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-white rounded-[40px] overflow-hidden shadow-sm border border-gray-100">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="p-4 text-xs font-bold uppercase text-gray-500">Booking ID</th>
-                    <th className="p-4 text-xs font-bold uppercase text-gray-500">Customer</th>
-                    <th className="p-4 text-xs font-bold uppercase text-gray-500">Vehicle</th>
-                    <th className="p-4 text-xs font-bold uppercase text-gray-500">Dates</th>
-                    <th className="p-4 text-xs font-bold uppercase text-gray-500">Total</th>
-                    <th className="p-4 text-xs font-bold uppercase text-gray-500">Status</th>
-                    <th className="p-4 text-xs font-bold uppercase text-gray-500">Actions</th>
+                  <tr className="bg-gray-50/50 border-b border-gray-100">
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">ID</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Customer</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Vehicle</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Dates</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Total</th>
+                    <th className="p-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {bookings.map((b) => (
-                    <tr key={b.id} className="border-b border-gray-50 last:border-0">
-                      <td className="p-4 font-semibold">{b.id}</td>
-                      <td className="p-4">
-                        <div className="flex flex-col">
-                          <span className="font-semibold">{b.customer}</span>
-                          <span className="text-xs text-gray-500">{b.email}</span>
-                        </div>
+                  {filteredBookings.map((b) => (
+                    <tr key={b.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
+                      <td className="p-6 font-black text-gray-400">#{b.id}</td>
+                      <td className="p-6">
+                        <div className="font-black">{b.customer_name}</div>
                       </td>
-                      <td className="p-4">{b.vehicle}</td>
-                      <td className="p-4 text-gray-500 text-sm">{b.dates}</td>
-                      <td className="p-4 font-bold">{b.total}</td>
-                      <td className="p-4">
-                        <span className={cn("status-badge capitalize", b.status)}>{b.status}</span>
+                      <td className="p-6 font-bold">{b.car_name}</td>
+                      <td className="p-6 text-gray-500 font-medium text-sm">
+                        {new Date(b.start_date).toLocaleDateString()} - {new Date(b.end_date).toLocaleDateString()}
                       </td>
-                      <td className="p-4">
-                        <button className="w-8 h-8 border border-gray-200 rounded-lg flex items-center justify-center text-gray-500 hover:text-blue-600 hover:border-blue-200 transition-colors">
-                          <Eye className="w-4 h-4" />
-                        </button>
+                      <td className="p-6 font-black text-lg">${b.total_price}</td>
+                      <td className="p-6">
+                        <span className={cn(
+                          "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest",
+                          b.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
+                          b.status === 'active' ? 'bg-blue-50 text-blue-600' :
+                          b.status === 'cancelled' ? 'bg-red-50 text-red-600' :
+                          'bg-gray-50 text-gray-500'
+                        )}>
+                          {b.status}
+                        </span>
                       </td>
                     </tr>
                   ))}
@@ -285,44 +476,51 @@ export default function AdminPage() {
 
       {/* CUSTOMERS TAB */}
       {activeTab === "adminCustomers" && (
-        <div className="space-y-6">
-          <div className="relative max-w-md w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="relative max-w-xl w-full">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input 
               type="text" 
-              placeholder="Search customers..." 
-              className="w-full pl-10 pr-4 py-3 bg-gray-100 border-none rounded-xl outline-none text-sm"
+              placeholder="Search by name or email..." 
+              value={customerSearch}
+              onChange={(e) => setCustomerSearch(e.target.value)}
+              className="w-full pl-14 pr-6 py-5 bg-white border border-gray-100 rounded-[24px] outline-none text-sm font-bold shadow-sm focus:shadow-md transition-all"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {customers.map((c) => (
-              <div key={c.id} className="bg-white rounded-2xl p-8 shadow-sm">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-blue-600">
-                    <Users className="w-6 h-6" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredCustomers.map((c) => (
+              <div key={c.id} className="bg-white rounded-[40px] p-10 shadow-sm border border-gray-100 hover:shadow-xl transition-all group">
+                <div className="flex justify-between items-start mb-8">
+                  <div className="w-16 h-16 bg-black rounded-3xl flex items-center justify-center text-white text-2xl font-black">
+                    {c.name.charAt(0)}
                   </div>
-                  <span className="bg-green-100 text-green-700 px-2 py-1 rounded-lg text-xs font-bold">Active</span>
+                  <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">Client</span>
                 </div>
-                <h4 className="font-bold mb-1">{c.name}</h4>
-                <p className="text-xs text-gray-500 mb-6">{c.email}</p>
+                <h4 className="text-xl font-black mb-1">{c.name}</h4>
+                <p className="text-sm text-gray-400 font-bold mb-8">{c.email}</p>
                 
-                <div className="space-y-2 mb-8">
+                <div className="space-y-3 mb-10">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Bookings:</span>
-                    <span className="font-semibold">{c.bookings}</span>
+                    <span className="text-gray-400 font-bold uppercase tracking-tighter">Bookings</span>
+                    <span className="font-black">{c.bookings_count}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Total Spent:</span>
-                    <span className="font-semibold">{c.spent}</span>
+                    <span className="text-gray-400 font-bold uppercase tracking-tighter">Total Spent</span>
+                    <span className="font-black text-emerald-600">${c.total_spent.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Member Since:</span>
-                    <span className="font-semibold">{c.since}</span>
+                    <span className="text-gray-400 font-bold uppercase tracking-tighter">Member Since</span>
+                    <span className="font-black">{new Date(c.member_since).toLocaleDateString()}</span>
                   </div>
                 </div>
                 
-                <button className="w-full py-3 border border-gray-200 rounded-lg font-semibold hover:bg-gray-50 transition-colors">View Details</button>
+                <button 
+                  onClick={() => viewCustomerDetails(c.id)}
+                  className="w-full py-4 border border-gray-100 rounded-2xl font-black hover:bg-black hover:text-white transition-all"
+                >
+                  View Full Profile
+                </button>
               </div>
             ))}
           </div>
@@ -330,33 +528,127 @@ export default function AdminPage() {
       )}
 
       {/* SETTINGS TAB */}
-      {activeTab === "adminSettings" && (
-        <div className="bg-white rounded-2xl p-10 shadow-sm max-w-2xl">
-          <h3 className="text-lg font-bold mb-6">Business Settings</h3>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold">Business Name</label>
-              <input type="text" defaultValue="DriveAway Car Rentals" className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none" />
-            </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold">Business Email</label>
-              <input type="email" defaultValue="admin@driveaway.com" className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none" />
-            </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold">Business Phone</label>
-              <input type="text" defaultValue="+1 (555) 123-4567" className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none" />
-            </div>
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold">Business Address</label>
-              <input type="text" defaultValue="123 Main Street, Los Angeles, CA 90001" className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none" />
+      {activeTab === "adminSettings" && settings && (
+        <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white rounded-[40px] p-12 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-4 mb-10">
+              <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-black">
+                <Settings className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-black tracking-tight">Business Information</h3>
             </div>
             
-            <button className="bg-black text-white px-8 py-3 rounded-lg font-bold hover:bg-gray-900 transition-colors mt-4">
-              Save Changes
-            </button>
+            <form onSubmit={handleUpdateSettings} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Business Name</label>
+                  <input 
+                    type="text" 
+                    value={settings.business_name} 
+                    onChange={(e) => setSettings({ ...settings, business_name: e.target.value })}
+                    className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl outline-none focus:border-black transition-all font-bold" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Business Email</label>
+                  <input 
+                    type="email" 
+                    value={settings.business_email} 
+                    onChange={(e) => setSettings({ ...settings, business_email: e.target.value })}
+                    className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl outline-none focus:border-black transition-all font-bold" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Business Phone</label>
+                  <input 
+                    type="text" 
+                    value={settings.business_phone} 
+                    onChange={(e) => setSettings({ ...settings, business_phone: e.target.value })}
+                    className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl outline-none focus:border-black transition-all font-bold" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Business Address</label>
+                  <input 
+                    type="text" 
+                    value={settings.business_address} 
+                    onChange={(e) => setSettings({ ...settings, business_address: e.target.value })}
+                    className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl outline-none focus:border-black transition-all font-bold" 
+                  />
+                </div>
+              </div>
+              
+              <button 
+                type="submit"
+                className="bg-black text-white px-10 py-5 rounded-2xl font-black hover:bg-gray-900 transition-all shadow-lg hover:shadow-black/20 flex items-center gap-3 mt-4"
+              >
+                <Save className="w-5 h-5" />
+                Save Business Profile
+              </button>
+            </form>
+          </div>
+
+          <div className="space-y-8">
+            <div className="bg-white rounded-[40px] p-10 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-red-600">
+                  <Lock className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-black tracking-tight">Security</h3>
+              </div>
+              <p className="text-gray-500 text-sm font-medium mb-8">
+                Keep your admin account secure by regularly updating your password.
+              </p>
+              <button 
+                onClick={() => setShowPasswordModal(true)}
+                className="w-full py-5 border-2 border-gray-100 rounded-2xl font-black hover:border-black transition-all flex items-center justify-center gap-3"
+              >
+                Change Admin Password
+              </button>
+            </div>
+
+            <div className="bg-black rounded-[40px] p-10 shadow-xl text-white">
+              <h3 className="text-xl font-black mb-4">Need Help?</h3>
+              <p className="text-gray-400 text-sm font-medium mb-8 leading-relaxed">
+                If you encounter any issues with the admin panel or need technical assistance, please contact our support team.
+              </p>
+              <button 
+                onClick={() => setShowSupportModal(true)}
+                className="w-full py-5 bg-white text-black rounded-2xl font-black hover:bg-gray-100 transition-all"
+              >
+                Contact Support
+              </button>
+            </div>
           </div>
         </div>
+      )}
+
+      {/* MODALS */}
+      {showCarModal && (
+        <CarModal 
+          car={editingCar} 
+          onClose={() => setShowCarModal(false)} 
+          onSave={() => { setShowCarModal(false); fetchData(); }} 
+        />
+      )}
+
+      {showCustomerModal && selectedCustomer && (
+        <CustomerDetailModal 
+          customer={selectedCustomer} 
+          onClose={() => setShowCustomerModal(false)} 
+        />
+      )}
+
+      {showPasswordModal && (
+        <ChangePasswordModal 
+          onClose={() => setShowPasswordModal(false)} 
+        />
+      )}
+
+      {showSupportModal && (
+        <SupportModal 
+          onClose={() => setShowSupportModal(false)} 
+        />
       )}
     </main>
   );
