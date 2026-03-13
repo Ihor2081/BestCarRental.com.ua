@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: 127.0.0.1
--- Час створення: Лют 23 2026 р., 18:51
+-- Час створення: Бер 13 2026 р., 22:18
 -- Версія сервера: 10.4.32-MariaDB
 -- Версія PHP: 8.0.30
 
@@ -22,6 +22,39 @@ SET time_zone = "+00:00";
 --
 CREATE DATABASE IF NOT EXISTS `car_sharing` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE `car_sharing`;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблиці `additional_services`
+--
+
+CREATE TABLE IF NOT EXISTS `additional_services` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `icon` varchar(255) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `desc` text NOT NULL,
+  `price` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблиці `available_discounts`
+--
+
+CREATE TABLE IF NOT EXISTS `available_discounts` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `min_days` int(11) NOT NULL,
+  `max_days` int(11) DEFAULT NULL,
+  `discount_percent` decimal(5,2) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -51,10 +84,6 @@ CREATE TABLE IF NOT EXISTS `cars` (
   UNIQUE KEY `license_plate` (`license_plate`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- ЗВ'ЯЗКИ ТАБЛИЦІ `cars`:
---
-
 -- --------------------------------------------------------
 
 --
@@ -78,14 +107,6 @@ CREATE TABLE IF NOT EXISTS `deals` (
   KEY `fk_deal_car` (`car_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- ЗВ'ЯЗКИ ТАБЛИЦІ `deals`:
---   `car_id`
---       `cars` -> `id`
---   `user_id`
---       `users` -> `id`
---
-
 -- --------------------------------------------------------
 
 --
@@ -108,10 +129,6 @@ CREATE TABLE IF NOT EXISTS `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- ЗВ'ЯЗКИ ТАБЛИЦІ `users`:
---
 
 --
 -- Обмеження зовнішнього ключа збережених таблиць
