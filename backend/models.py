@@ -89,3 +89,24 @@ class Deal(Base):
 
     user = relationship("User", back_populates="deals")
     car = relationship("Car", back_populates="deals")
+
+class AvailableDiscount(Base):
+    __tablename__ = "available_discounts"
+
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    min_days = Column(Integer, nullable=False)
+    max_days = Column(Integer, nullable=False)
+    discount_percent = Column(Numeric(5, 2), nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
+    updated_at = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
+
+class AdditionalService(Base):
+    __tablename__ = "additional_services"
+
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    icon = Column(String(50), nullable=False) # Store lucide icon name
+    name = Column(String(100), nullable=False)
+    desc = Column(Text, nullable=True)
+    price = Column(Numeric(10, 2), nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
+    updated_at = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
