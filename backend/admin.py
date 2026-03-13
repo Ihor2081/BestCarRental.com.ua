@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import decimal
 
 from database import get_db
-from models import User, Car, Deal, RoleEnum, DealStatusEnum, CarStatusEnum, TransmissionEnum, FuelTypeEnum
+from models import User, Car, Deal, RoleEnum, DealStatusEnum, CarStatusEnum, TransmissionEnum, FuelTypeEnum, AvailableDiscount, AdditionalService
 from auth import get_admin_user, get_password_hash, verify_password
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -81,6 +81,33 @@ class SettingsUpdate(BaseModel):
     business_email: EmailStr
     business_phone: str
     business_address: str
+
+class DiscountBase(BaseModel):
+    min_days: int
+    max_days: int
+    discount_percent: float
+
+class DiscountCreate(DiscountBase):
+    pass
+
+class DiscountResponse(DiscountBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+class ServiceBase(BaseModel):
+    icon: str
+    name: str
+    desc: Optional[str] = None
+    price: float
+
+class ServiceCreate(ServiceBase):
+    pass
+
+class ServiceResponse(ServiceBase):
+    id: int
+    class Config:
+        from_attributes = True
 
 class ChangePasswordRequest(BaseModel):
     current_password: str
@@ -427,3 +454,77 @@ async def change_password(data: ChangePasswordRequest, db: AsyncSession = Depend
     admin.password_hash = get_password_hash(data.new_password)
     await db.commit()
     return {"status": "success", "message": "Password changed successfully"}
+
+# --- Discounts Endpoints ---
+
+@router.get("/discounts", response_model=List[DiscountResponse])
+async def get_discounts(db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
+    result = await db.execute(select(AvailableDiscount).order_by(AvailableDiscount.min_days))
+    return result.scalars().all()
+
+@router.post("/discounts", response_model=DiscountResponse)
+async def create_discount(data: DiscountCreate, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
+    new_discount = AvailableDiscount(**data.dict())
+    db.add(new_discount)
+    await db.commit()
+    await db.refresh(new_discount)
+    return new_discount
+
+@router.put("/discounts/{discount_id}", response_model=DiscountResponse)
+async def update_discount(discount_id: int, data: DiscountCreate, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
+    result = await db.execute(select(AvailableDiscount).where(AvailableDiscount.id == discount_id))
+    discount = result.scalars().first()
+    if not discount:
+        raise HTTPException(status_code=404, detail="Discount not found")
+    for key, value in data.dict().items():
+        setattr(discount, key, value)
+    await db.commit()
+    await db.refresh(discount)
+    return discount
+
+@router.delete("/discounts/{discount_id}")
+async def delete_discount(discount_id: int, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
+    result = await db.execute(select(AvailableDiscount).where(AvailableDiscount.id == discount_id))
+    discount = result.scalars().first()
+    if not discount:
+        raise HTTPException(status_code=404, detail="Discount not found")
+    await db.delete(discount)
+    await db.commit()
+    return {"status": "success"}
+
+# --- Services Endpoints ---
+
+@router.get("/services", response_model=List[ServiceResponse])
+async def get_services(db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
+    result = await db.execute(select(AdditionalService).order_by(AdditionalService.name))
+    return result.scalars().all()
+
+@router.post("/services", response_model=ServiceResponse)
+async def create_service(data: ServiceCreate, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
+    new_service = AdditionalService(**data.dict())
+    db.add(new_service)
+    await db.commit()
+    await db.refresh(new_service)
+    return new_service
+
+@router.put("/services/{service_id}", response_model=ServiceResponse)
+async def update_service(service_id: int, data: ServiceCreate, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
+    result = await db.execute(select(AdditionalService).where(AdditionalService.id == service_id))
+    service = result.scalars().first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+    for key, value in data.dict().items():
+        setattr(service, key, value)
+    await db.commit()
+    await db.refresh(service)
+    return service
+
+@router.delete("/services/{service_id}")
+async def delete_service(service_id: int, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
+    result = await db.execute(select(AdditionalService).where(AdditionalService.id == service_id))
+    service = result.scalars().first()
+    if not service:
+        raise HTTPException(status_code=404, detail="Service not found")
+    await db.delete(service)
+    await db.commit()
+    return {"status": "success"}
