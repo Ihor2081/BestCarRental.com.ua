@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { 
   LayoutDashboard, Car, Calendar, Users, Settings, 
   DollarSign, Search, Plus, Pencil, Trash2, Eye,
-  TrendingUp, BarChart3, PieChart, Save, Lock
+  TrendingUp, BarChart3, PieChart, Save, Lock,
+  Percent, Sparkles, PlusCircle, LucideIcon
 } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, 
   Tooltip, Legend, ResponsiveContainer, BarChart, Bar,
@@ -14,11 +16,13 @@ import {
 } from 'recharts';
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { Car as CarType, Booking, Customer, DashboardStats, Settings as SettingsType } from "@/types";
+import { Car as CarType, Booking, Customer, DashboardStats, Settings as SettingsType, Discount, AdditionalService } from "@/types";
 import CarModal from "@/components/admin/CarModal";
 import CustomerDetailModal from "@/components/admin/CustomerDetailModal";
 import ChangePasswordModal from "@/components/admin/ChangePasswordModal";
 import SupportModal from "@/components/admin/SupportModal";
+import DiscountModal from "@/components/admin/DiscountModal";
+import ServiceModal from "@/components/admin/ServiceModal";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -37,6 +41,8 @@ export default function AdminPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [settings, setSettings] = useState<SettingsType | null>(null);
+  const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [services, setServices] = useState<AdditionalService[]>([]);
 
   // Filter states
   const [fleetSearch, setFleetSearch] = useState("");
@@ -51,6 +57,10 @@ export default function AdminPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [editingDiscount, setEditingDiscount] = useState<Discount | undefined>(undefined);
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [editingService, setEditingService] = useState<AdditionalService | undefined>(undefined);
 
   const fetchData = async () => {
     setLoading(true);
@@ -63,12 +73,14 @@ export default function AdminPage() {
 
       const headers = { "Authorization": `Bearer ${token}` };
       
-      const [statsRes, fleetRes, bookingsRes, customersRes, settingsRes] = await Promise.all([
+      const [statsRes, fleetRes, bookingsRes, customersRes, settingsRes, discountsRes, servicesRes] = await Promise.all([
         fetch("/api/admin/dashboard", { headers }),
         fetch("/api/admin/cars", { headers }),
         fetch("/api/admin/bookings", { headers }),
         fetch("/api/admin/users", { headers }),
-        fetch("/api/admin/settings", { headers })
+        fetch("/api/admin/settings", { headers }),
+        fetch("/api/admin/discounts", { headers }),
+        fetch("/api/admin/services", { headers })
       ]);
       
       if (statsRes.status === 403 || fleetRes.status === 403) {
@@ -76,12 +88,14 @@ export default function AdminPage() {
         return;
       }
 
-      const [statsData, fleetData, bookingsData, customersData, settingsData] = await Promise.all([
+      const [statsData, fleetData, bookingsData, customersData, settingsData, discountsData, servicesData] = await Promise.all([
         statsRes.json(),
         fleetRes.json(),
         bookingsRes.json(),
         customersRes.json(),
-        settingsRes.json()
+        settingsRes.json(),
+        discountsRes.json(),
+        servicesRes.json()
       ]);
 
       setStats(statsData);
@@ -89,6 +103,8 @@ export default function AdminPage() {
       setBookings(bookingsData);
       setCustomers(customersData);
       setSettings(settingsData);
+      setDiscounts(discountsData);
+      setServices(servicesData);
     } catch (error) {
       console.error("Error fetching admin data:", error);
     } finally {
@@ -119,6 +135,34 @@ export default function AdminPage() {
       fetchData();
     } catch (error) {
       console.error("Error deleting car:", error);
+    }
+  };
+
+  const handleDeleteDiscount = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this discount?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`/api/admin/discounts/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting discount:", error);
+    }
+  };
+
+  const handleDeleteService = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this service?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`/api/admin/services/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting service:", error);
     }
   };
 
@@ -209,6 +253,7 @@ export default function AdminPage() {
             { id: "adminFleet", icon: Car, label: "Fleet" },
             { id: "adminBookings", icon: Calendar, label: "Bookings" },
             { id: "adminCustomers", icon: Users, label: "Customers" },
+            { id: "adminFeatures", icon: Sparkles, label: "Features & Discounts" },
             { id: "adminSettings", icon: Settings, label: "Settings" },
           ].map((tab) => (
             <button 
@@ -527,6 +572,108 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* FEATURES & DISCOUNTS TAB */}
+      {activeTab === "adminFeatures" && (
+        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {/* DISCOUNTS SECTION */}
+          <section>
+            <div className="flex justify-between items-center mb-8">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                  <Percent className="w-6 h-6" />
+                </div>
+                <h3 className="text-2xl font-black tracking-tight">Available Discounts</h3>
+              </div>
+              <button 
+                onClick={() => { setEditingDiscount(undefined); setShowDiscountModal(true); }}
+                className="bg-black text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-900 transition-all"
+              >
+                <Plus className="w-4 h-4" /> Add Discount
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {discounts.map((discount) => (
+                <div key={discount.id} className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-xl transition-all group">
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="text-4xl font-black text-blue-600">{discount.discount_percent}%</div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => { setEditingDiscount(discount); setShowDiscountModal(true); }}
+                        className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 hover:text-blue-600 transition-all"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteDiscount(discount.id)}
+                        className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-600 transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-400 font-bold uppercase tracking-widest mb-1">Duration Range</div>
+                  <div className="text-lg font-black">{discount.min_days} - {discount.max_days} Days</div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* ADDITIONAL SERVICES SECTION */}
+          <section>
+            <div className="flex justify-between items-center mb-8">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <h3 className="text-2xl font-black tracking-tight">Additional Services</h3>
+              </div>
+              <button 
+                onClick={() => { setEditingService(undefined); setShowServiceModal(true); }}
+                className="bg-black text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-gray-900 transition-all"
+              >
+                <Plus className="w-4 h-4" /> Add Service
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {services.map((service) => {
+                const IconComponent = (LucideIcons as any)[service.icon] as LucideIcon;
+                return (
+                  <div key={service.id} className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-xl transition-all group">
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
+                        {IconComponent && <IconComponent className="w-7 h-7" />}
+                      </div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => { setEditingService(service); setShowServiceModal(true); }}
+                          className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 hover:text-purple-600 transition-all"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteService(service.id)}
+                          className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-600 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <h4 className="text-xl font-black mb-1">{service.name}</h4>
+                    <p className="text-sm text-gray-400 font-medium mb-6 line-clamp-2 h-10">{service.desc}</p>
+                    <div className="flex justify-between items-center pt-6 border-t border-gray-50">
+                      <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Price</span>
+                      <span className="text-2xl font-black text-black">${service.price}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+      )}
+
       {/* SETTINGS TAB */}
       {activeTab === "adminSettings" && settings && (
         <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -648,6 +795,22 @@ export default function AdminPage() {
       {showSupportModal && (
         <SupportModal 
           onClose={() => setShowSupportModal(false)} 
+        />
+      )}
+
+      {showDiscountModal && (
+        <DiscountModal 
+          discount={editingDiscount}
+          onClose={() => setShowDiscountModal(false)}
+          onSave={() => { setShowDiscountModal(false); fetchData(); }}
+        />
+      )}
+
+      {showServiceModal && (
+        <ServiceModal 
+          service={editingService}
+          onClose={() => setShowServiceModal(false)}
+          onSave={() => { setShowServiceModal(false); fetchData(); }}
         />
       )}
     </main>
