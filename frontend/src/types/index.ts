@@ -56,3 +56,18 @@ export interface Settings {
   business_phone: string;
   business_address: string;
 }
+
+export interface Discount {
+  id: number;
+  min_days: number;
+  max_days: number;
+  discount_percent: number;
+}
+
+export interface AdditionalService {
+  id: number;
+  icon: string;
+  name: string;
+  desc?: string;
+  price: number;
+}
