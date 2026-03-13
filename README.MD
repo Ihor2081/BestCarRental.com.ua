@@ -11,6 +11,7 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
   - **Fleet Management**: Full CRUD operations for vehicles with status tracking and image management.
   - **Booking Control**: Centralized view of all rentals with status filtering and search.
   - **Customer Insights**: Detailed profiles with booking history and financial summaries.
+  - **Features & Discounts**: Manage rental duration discounts and additional services (insurance, GPS, etc.) with dynamic icons.
   - **Support Integration**: Quick access to technical support via a dedicated Discord community modal.
 - **User Profile Management**:
   - **Personal Information**: View and manage account details.
@@ -52,6 +53,18 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 - `GET /api/admin/bookings`: List all bookings with search and status filters.
 - `GET /api/admin/users`: List all customers with spending and booking stats.
 - `GET /api/admin/settings`: Manage business profile (synced with admin user profile).
+- `GET /api/admin/users/{id}`: Retrieve detailed customer profile and booking history.
+- `GET /api/admin/discounts`: List all rental duration discounts.
+- `POST /api/admin/discounts`: Create a new rental discount.
+- `PUT /api/admin/discounts/{id}`: Update an existing discount.
+- `DELETE /api/admin/discounts/{id}`: Remove a discount.
+- `GET /api/admin/services`: List all additional rental services.
+- `POST /api/admin/services`: Create a new additional service.
+- `PUT /api/admin/services/{id}`: Update an existing service.
+- `DELETE /api/admin/services/{id}`: Remove a service.
+- `GET /api/admin/settings`: Retrieve business profile settings.
+- `PUT /api/admin/settings`: Update business profile (synced with admin user profile).
+- `POST /api/admin/change-password`: Securely update admin credentials.
 - `POST /api/admin/change-password`: Securely update admin credentials.
 
 ### System
@@ -63,11 +76,11 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 ├── backend/
 │   ├── main.py               # FastAPI application and API routes
 │   ├── auth.py               # Contains the authentication logic
-│   ├── admin.py              # Modular router for all administrative functions and dashboard analytics.
+│   └── admin.py              # Modular router for all administrative functions and dashboard analytics.
 │   ├── database.py           # Async SQLAlchemy engine & session setup
 │   ├── models.py             # Database models
 │   ├── requirements.txt      # Python dependencies
-│   ├── .env.example          # Environment variables template
+│   └── .env.example          # Environment variables template
 
 ├── frontend/
 │   ├── src/
@@ -88,6 +101,8 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 │   │   │   ├── admin/
 │   │   │   │   ├── CarModal.tsx             # Form for adding and editing fleet vehicles.
 │   │   │   │   ├── CustomerDetailModal.tsx  # Detailed customer profile and history view.
+│   │   │   │   ├── DiscountModal.tsx        # Interface for managing rental duration discounts.
+│   │   │   │   ├── ServiceModal.tsx         # Interface for managing additional services.
 │   │   │   │   ├── SupportModal.tsx         # Discord support integration modal.
 │   │   │   │   └── ChangePasswordModal.tsx  # Secure admin password management.
 │   │   │   ├── CarCard.tsx                  # Car display card component
