@@ -14,6 +14,14 @@ load_dotenv()
 
 app = FastAPI(title="Car Sharing API")
 
+# --- Додаємо CORS middleware ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # або можна вказати конкретний фронтенд, наприклад ["http://localhost:3000"]
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
+
 # Include routers
 app.include_router(auth_router)
 app.include_router(admin_router)
