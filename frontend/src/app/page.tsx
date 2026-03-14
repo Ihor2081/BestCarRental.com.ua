@@ -5,6 +5,7 @@ import CarCard from "@/components/CarCard";
 import Filters, { FiltersState } from "@/components/Filters";
 import Sort, { SortOption } from "@/components/Sort";
 import { Car } from "@/types";
+import { getCars } from "@/lib/api";
 import { debounce } from "lodash";
 
 export default function Home() {
@@ -23,7 +24,7 @@ export default function Home() {
   const [totalPages, setTotalPages] = useState(1);
   const pageSize = 6;
 
-  // Debounced fetch
+  // --- Debounced fetch using api.ts ---
   const fetchCars = useCallback(
     debounce(async (filters: FiltersState, sort: SortOption, page: number) => {
       setLoading(true);
@@ -34,7 +35,7 @@ export default function Home() {
         params.append("page_size", pageSize.toString());
         params.append("sort", sort);
 
-        // Add filters
+        // Filters
         if (filters.priceRange) {
           params.append("min_price", filters.priceRange[0].toString());
           params.append("max_price", filters.priceRange[1].toString());
@@ -45,8 +46,8 @@ export default function Home() {
         if (filters.luggage.length) params.append("luggage", filters.luggage.join(","));
         if (filters.features.length) params.append("features", filters.features.join(","));
 
-        const response = await fetch(`/api/cars?${params.toString()}`);
-        const data = await response.json();
+        const data = await getCars(params.toString());
+
         if (Array.isArray(data.items)) {
           setCars(data.items);
           setTotalPages(data.total_pages);
@@ -63,14 +64,12 @@ export default function Home() {
     []
   );
 
-  // Effect: fetch whenever filters, sort, or page changes
   useEffect(() => {
     fetchCars(filters, sortOption, page);
   }, [filters, sortOption, page, fetchCars]);
 
-  // Handlers
   const handleFilterChange = (newFilters: FiltersState) => {
-    setPage(1); // reset to first page
+    setPage(1);
     setFilters(newFilters);
   };
 
