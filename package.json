@@ -1,0 +1,17 @@
+{
+  "name": "driveaway-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w frontend\" \"cd backend && py -m uvicorn main:app --reload --port 8000\"",
+    "build": "npm run build -w frontend",
+    "start": "npm run start -w frontend",
+    "lint": "npm run lint -w frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
