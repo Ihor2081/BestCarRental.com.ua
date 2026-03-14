@@ -1,142 +1,112 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, Query, status
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
+from sqlalchemy import select, or_, and_
 from sqlalchemy.future import select
-import os
-from dotenv import load_dotenv
-
-from database import get_db, engine, Base
+from typing import List, Optional
+from database import get_db
 from models import Car
-from auth import router as auth_router
-from admin import router as admin_router
-
-load_dotenv()
+import math
 
 app = FastAPI(title="Car Sharing API")
 
-# --- Додаємо CORS middleware ---
+# --- CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # або можна вказати конкретний фронтенд, наприклад ["http://localhost:3000"]
+    allow_origins=["*"],  # для розробки, можна змінити на фронтенд домен
     allow_methods=["*"],
     allow_headers=["*"]
 )
 
-# Include routers
-app.include_router(auth_router)
-app.include_router(admin_router)
-
-# --- Car Endpoints ---
-
+# --- Car Endpoint з фільтрами, сортуванням та пагінацією ---
 @app.get("/cars")
 async def get_cars(
     db: AsyncSession = Depends(get_db),
-
-    # sorting
-    sort: str | None = None,
-
-    # price filter
-    price_min: float | None = None,
-    price_max: float | None = None,
-
-    # specs filters
-    transmission: str | None = None,
-    fuel_type: str | None = None,
-    passengers: int | None = None,
-    luggage: int | None = None,
-
-    # features
-    gps: bool | None = None,
-    bluetooth: bool | None = None,
-    leather: bool | None = None
+    page: int = Query(1, ge=1),
+    page_size: int = Query(6, ge=1),
+    sort: str = Query("recommended"),
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    transmission: Optional[str] = None,  # comma-separated
+    fuel_type: Optional[str] = None,     # comma-separated
+    passengers: Optional[str] = None,   # comma-separated
+    luggage: Optional[str] = None,      # comma-separated
+    features: Optional[str] = None      # comma-separated
 ):
+    try:
+        query = select(Car).where(Car.status == "available")
 
-    query = select(Car).where(Car.status == "available")
+        # --- Filters ---
+        if min_price is not None:
+            query = query.where(Car.price_per_day >= min_price)
+        if max_price is not None:
+            query = query.where(Car.price_per_day <= max_price)
+        if transmission:
+            transmission_list = transmission.split(",")
+            query = query.where(Car.transmission.in_(transmission_list))
+        if fuel_type:
+            fuel_list = fuel_type.split(",")
+            query = query.where(Car.fuel_type.in_(fuel_list))
+        if passengers:
+            passengers_list = [int(p) for p in passengers.split(",")]
+            query = query.where(Car.passengers.in_(passengers_list))
+        if luggage:
+            luggage_list = [int(l) for l in luggage.split(",")]
+            query = query.where(Car.luggage.in_(luggage_list))
+        if features:
+            features_list = features.split(",")
+            # припускаємо, що Car.features - comma-separated string
+            for feature in features_list:
+                query = query.where(Car.features.ilike(f"%{feature}%"))
 
-    # ---- FILTERS ----
+        # --- Sorting ---
+        if sort == "price_low":
+            query = query.order_by(Car.price_per_day.asc())
+        elif sort == "price_high":
+            query = query.order_by(Car.price_per_day.desc())
+        else:
+            query = query.order_by(Car.id.asc())  # recommended default
 
-    if price_min is not None:
-        query = query.where(Car.price_per_day >= price_min)
+        # --- Pagination ---
+        total_result = await db.execute(query)
+        total_items = len(total_result.scalars().all())
+        total_pages = max(math.ceil(total_items / page_size), 1)
 
-    if price_max is not None:
-        query = query.where(Car.price_per_day <= price_max)
+        query = query.offset((page - 1) * page_size).limit(page_size)
+        result = await db.execute(query)
+        cars = result.scalars().all()
 
-    if transmission:
-        query = query.where(Car.transmission == transmission)
+        # --- Форматуємо відповідь ---
+        items = []
+        for car in cars:
+            items.append({
+                "id": car.id,
+                "brand": car.brand,
+                "model": car.model,
+                "category": car.category,
+                "price_per_day": float(car.price_per_day),
+                "image": car.images or "https://picsum.photos/seed/car/800/600",
+                "passengers": car.passengers,
+                "luggage": car.luggage,
+                "transmission": car.transmission,
+                "fuel_type": car.fuel_type,
+                "features": car.features.split(",") if car.features else [],
+            })
 
-    if fuel_type:
-        query = query.where(Car.fuel_type == fuel_type)
+        return {"items": items, "total_pages": total_pages}
 
-    if passengers:
-        query = query.where(Car.passengers >= passengers)
-
-    if luggage:
-        query = query.where(Car.luggage >= luggage)
-
-    # ---- FEATURES ----
-
-    if gps:
-        query = query.where(Car.features.contains(["GPS"]))
-
-    if bluetooth:
-        query = query.where(Car.features.contains(["Bluetooth"]))
-
-    if leather:
-        query = query.where(Car.features.contains(["Leather Seats"]))
-
-    # ---- SORTING ----
-
-    if sort == "price_low":
-        query = query.order_by(Car.price_per_day.asc())
-
-    elif sort == "price_high":
-        query = query.order_by(Car.price_per_day.desc())
-
-    elif sort == "recommended":
-        query = query.order_by(Car.bookings_count.desc())
-
-    # ---- EXECUTE QUERY ----
-
-    result = await db.execute(query)
-    cars = result.scalars().all()
-
-    return [
-        {
-            "id": car.id,
-            "brand": car.brand,
-            "model": car.model,
-            "category": car.category,
-            "price_per_day": float(car.price_per_day),
-            "image": car.images,
-            "passengers": car.passengers,
-            "luggage": car.luggage,
-            "transmission": car.transmission,
-            "fuel_type": car.fuel_type,
-            "features": car.features
-        }
-        for car in cars
-    ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching cars: {str(e)}")
 
 
+# --- DB Status Endpoint ---
 @app.get("/db-status")
 async def db_status(db: AsyncSession = Depends(get_db)):
-
     try:
         result = await db.execute(text("SELECT 1"))
         row = result.fetchone()
-
         if row and row[0] == 1:
             return {"status": "success"}
-
         raise HTTPException(status_code=500, detail="DB error")
-
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(e)
-        )
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
