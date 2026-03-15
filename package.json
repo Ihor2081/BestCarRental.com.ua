@@ -13,5 +13,9 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "react-date-range": "^2.0.1"
   }
 }
