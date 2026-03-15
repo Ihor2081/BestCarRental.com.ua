@@ -71,3 +71,30 @@ export interface AdditionalService {
   desc?: string;
   price: number;
 }
+
+export interface Card {
+  id: number;
+  card_number: string;
+  expires: string;
+}
+
+export interface UserStats {
+  total_deals: number;
+  active_deals: number;
+  total_spent: number;
+  reward_points: number;
+}
+
+export interface UserMe {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  drivers_license?: string;
+  address?: string;
+  created_at: string;
+  cards: Card[];
+  stats: UserStats;
+  booking_history: any[];
+  role: string;
+}
