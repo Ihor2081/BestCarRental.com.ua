@@ -9,6 +9,7 @@ from database import get_db, engine, Base
 from models import Car
 from auth import router as auth_router
 from admin import router as admin_router
+from users import router as users_router
 
 load_dotenv()
 
@@ -17,6 +18,7 @@ app = FastAPI(title="Car Sharing API")
 # Include routers
 app.include_router(auth_router)
 app.include_router(admin_router)
+app.include_router(users_router)
 
 # --- Car Endpoints ---
 
