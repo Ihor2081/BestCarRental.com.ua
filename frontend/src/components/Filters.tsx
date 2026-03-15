@@ -1,22 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { debounce } from "lodash";
+import { useState } from "react";
 
-interface FiltersProps {
-  onFilterChange: (filters: FiltersState) => void;
-}
-
-export interface FiltersState {
+export type FiltersState = {
   priceRange: [number, number];
   transmission: string[];
   fuel_type: string[];
   passengers: number[];
   luggage: number[];
   features: string[];
-}
+};
 
-export default function Filters({ onFilterChange }: FiltersProps) {
+type Props = {
+  onFilterChange: (filters: FiltersState) => void;
+};
+
+export default function Filters({ onFilterChange }: Props) {
+
   const [filters, setFilters] = useState<FiltersState>({
     priceRange: [0, 500],
     transmission: [],
@@ -26,131 +26,262 @@ export default function Filters({ onFilterChange }: FiltersProps) {
     features: [],
   });
 
-  // Debounced callback to parent
-  const debouncedUpdate = debounce((newFilters: FiltersState) => {
+  const updateFilters = (newFilters: FiltersState) => {
+    setFilters(newFilters);
     onFilterChange(newFilters);
-  }, 300);
-
-  // Handle filter changes
-  const handleChange = (key: keyof FiltersState, value: any) => {
-    setFilters(prev => {
-      const updated = { ...prev, [key]: value };
-      debouncedUpdate(updated);
-      return updated;
-    });
   };
 
-  // Individual toggle helper for arrays
-  const toggleValue = (key: keyof FiltersState, value: string | number) => {
-    setFilters(prev => {
-      const arr = prev[key] as any[];
-      const updatedArr = arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value];
-      const updated = { ...prev, [key]: updatedArr };
-      debouncedUpdate(updated);
-      return updated;
-    });
+  const toggleStringFilter = (
+    field: keyof FiltersState,
+    value: string
+  ) => {
+
+    const current = filters[field] as string[];
+
+    const updated = current.includes(value)
+      ? current.filter((v) => v !== value)
+      : [...current, value];
+
+    const newFilters = {
+      ...filters,
+      [field]: updated
+    };
+
+    updateFilters(newFilters);
+  };
+
+  const toggleNumberFilter = (
+    field: keyof FiltersState,
+    value: number
+  ) => {
+
+    const current = filters[field] as number[];
+
+    const updated = current.includes(value)
+      ? current.filter((v) => v !== value)
+      : [...current, value];
+
+    const newFilters = {
+      ...filters,
+      [field]: updated
+    };
+
+    updateFilters(newFilters);
   };
 
   return (
     <aside className="w-full lg:w-64 space-y-8">
-      {/* Price Range */}
+
+      {/* PRICE RANGE */}
+
       <div>
-        <h3 className="text-lg font-bold mb-4">Price Range</h3>
-        <input
-          type="range"
-          min={0}
-          max={500}
-          value={filters.priceRange[1]}
-          onChange={(e) => handleChange("priceRange", [0, parseInt(e.target.value)])}
-          className="w-full accent-black"
-        />
-        <div className="flex justify-between text-sm text-gray-500 mt-2">
-          <span>$0</span>
-          <span>${filters.priceRange[1]}+</span>
+        <h3 className="font-semibold mb-3">Price Range</h3>
+
+        <div className="flex gap-2">
+
+          <input
+            type="number"
+            value={filters.priceRange[0]}
+            onChange={(e) => {
+
+              const newFilters = {
+                ...filters,
+                priceRange: [Number(e.target.value), filters.priceRange[1]]
+              };
+
+              updateFilters(newFilters);
+
+            }}
+            className="w-full border rounded-lg p-2"
+            placeholder="Min"
+          />
+
+          <input
+            type="number"
+            value={filters.priceRange[1]}
+            onChange={(e) => {
+
+              const newFilters = {
+                ...filters,
+                priceRange: [filters.priceRange[0], Number(e.target.value)]
+              };
+
+              updateFilters(newFilters);
+
+            }}
+            className="w-full border rounded-lg p-2"
+            placeholder="Max"
+          />
+
         </div>
       </div>
 
-      {/* Transmission */}
+
+      {/* TRANSMISSION */}
+
       <div>
-        <h3 className="text-lg font-bold mb-4">Transmission</h3>
-        {["automatic", "manual"].map(trans => (
-          <label key={trans} className="flex items-center gap-3 cursor-pointer group">
-            <input
-              type="checkbox"
-              checked={filters.transmission.includes(trans)}
-              onChange={() => toggleValue("transmission", trans)}
-              className="w-5 h-5 rounded border-gray-300 text-black focus:ring-black"
-            />
-            <span className="text-gray-600 group-hover:text-black transition-colors">{trans}</span>
-          </label>
-        ))}
+
+        <h3 className="font-semibold mb-3">Transmission</h3>
+
+        <label className="flex items-center gap-2">
+
+          <input
+            type="checkbox"
+            onChange={() =>
+              toggleStringFilter("transmission", "automatic")
+            }
+          />
+
+          Automatic
+
+        </label>
+
+        <label className="flex items-center gap-2">
+
+          <input
+            type="checkbox"
+            onChange={() =>
+              toggleStringFilter("transmission", "mechanic")
+            }
+          />
+
+          Manual
+
+        </label>
+
       </div>
 
-      {/* Fuel Type */}
+
+      {/* FUEL TYPE */}
+
       <div>
-        <h3 className="text-lg font-bold mb-4">Fuel Type</h3>
-        {["gasoline", "electricity", "hybrid"].map(fuel => (
-          <label key={fuel} className="flex items-center gap-3 cursor-pointer group capitalize">
-            <input
-              type="checkbox"
-              checked={filters.fuel_type.includes(fuel)}
-              onChange={() => toggleValue("fuel_type", fuel)}
-              className="w-5 h-5 rounded border-gray-300 text-black focus:ring-black"
-            />
-            <span className="text-gray-600 group-hover:text-black transition-colors">{fuel}</span>
-          </label>
-        ))}
+
+        <h3 className="font-semibold mb-3">Fuel Type</h3>
+
+        <label className="flex items-center gap-2">
+
+          <input
+            type="checkbox"
+            onChange={() =>
+              toggleStringFilter("fuel_type", "gasoline")
+            }
+          />
+
+          Gasoline
+
+        </label>
+
+        <label className="flex items-center gap-2">
+
+          <input
+            type="checkbox"
+            onChange={() =>
+              toggleStringFilter("fuel_type", "gas")
+            }
+          />
+
+          Gas
+
+        </label>
+
+        <label className="flex items-center gap-2">
+
+          <input
+            type="checkbox"
+            onChange={() =>
+              toggleStringFilter("fuel_type", "electricity")
+            }
+          />
+
+          Electric
+
+        </label>
+
       </div>
 
-      {/* Passengers */}
+
+      {/* PASSENGERS */}
+
       <div>
-        <h3 className="text-lg font-bold mb-4">Passengers</h3>
-        {[2, 4, 5, 7].map(num => (
-          <label key={num} className="flex items-center gap-3 cursor-pointer group">
+
+        <h3 className="font-semibold mb-3">Passengers</h3>
+
+        {[2, 4, 5, 7].map((p) => (
+
+          <label key={p} className="flex items-center gap-2">
+
             <input
               type="checkbox"
-              checked={filters.passengers.includes(num)}
-              onChange={() => toggleValue("passengers", num)}
-              className="w-5 h-5 rounded border-gray-300 text-black focus:ring-black"
+              onChange={() =>
+                toggleNumberFilter("passengers", p)
+              }
             />
-            <span className="text-gray-600 group-hover:text-black transition-colors">{num}</span>
+
+            {p} Passengers
+
           </label>
+
         ))}
+
       </div>
 
-      {/* Luggage */}
+
+      {/* LUGGAGE */}
+
       <div>
-        <h3 className="text-lg font-bold mb-4">Luggage</h3>
-        {[1, 2, 3, 4].map(num => (
-          <label key={num} className="flex items-center gap-3 cursor-pointer group">
+
+        <h3 className="font-semibold mb-3">Luggage</h3>
+
+        {[1, 2, 3].map((l) => (
+
+          <label key={l} className="flex items-center gap-2">
+
             <input
               type="checkbox"
-              checked={filters.luggage.includes(num)}
-              onChange={() => toggleValue("luggage", num)}
-              className="w-5 h-5 rounded border-gray-300 text-black focus:ring-black"
+              onChange={() =>
+                toggleNumberFilter("luggage", l)
+              }
             />
-            <span className="text-gray-600 group-hover:text-black transition-colors">{num}</span>
+
+            {l} Bags
+
           </label>
+
         ))}
+
       </div>
 
-      {/* Features */}
+
+      {/* FEATURES */}
+
       <div>
-        <h3 className="text-lg font-bold mb-4">Additional Features</h3>
-        {["gps", "bluetooth", "leather"].map(feature => (
-          <label key={feature} className="flex items-center gap-3 cursor-pointer group capitalize">
+
+        <h3 className="font-semibold mb-3">Additional Features</h3>
+
+        {[
+          "gps",
+          "bluetooth",
+          "air_conditioning",
+          "heated_seats"
+        ].map((feature) => (
+
+          <label key={feature} className="flex items-center gap-2">
+
             <input
               type="checkbox"
-              checked={filters.features.includes(feature)}
-              onChange={() => toggleValue("features", feature)}
-              className="w-5 h-5 rounded border-gray-300 text-black focus:ring-black"
+              onChange={() =>
+                toggleStringFilter("features", feature)
+              }
             />
-            <span className="text-gray-600 group-hover:text-black transition-colors">
-              {feature === "leather" ? "Leather Seats" : feature}
-            </span>
+
+            {feature.replace("_", " ")}
+
           </label>
+
         ))}
+
       </div>
+
     </aside>
   );
 }

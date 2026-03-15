@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import CarCard from "@/components/CarCard";
 import Filters, { FiltersState } from "@/components/Filters";
 import Sort, { SortOption } from "@/components/Sort";
 import { Car } from "@/types";
 import { getCars } from "@/lib/api";
-import { debounce } from "lodash";
 
 export default function Home() {
 
@@ -34,84 +33,104 @@ export default function Home() {
 
   const pageSize = 6;
 
-  const fetchCars = useCallback(
-    debounce(async (filters: FiltersState, sort: SortOption, page: number) => {
+  // ---------------- FETCH CARS ----------------
 
-      setLoading(true);
+  const fetchCars = async (
+    filters: FiltersState,
+    sort: SortOption,
+    page: number
+  ) => {
 
-      try {
+    setLoading(true);
 
-        const params = new URLSearchParams();
+    try {
 
-        params.append("page", page.toString());
-        params.append("page_size", pageSize.toString());
-        params.append("sort", sort);
+      const params = new URLSearchParams();
 
-        // HERO SEARCH
-        if (location) params.append("location", location);
-        if (pickupDate) params.append("pickup_date", pickupDate);
-        if (returnDate) params.append("return_date", returnDate);
+      params.append("page", page.toString());
+      params.append("page_size", pageSize.toString());
+      params.append("sort", sort);
 
-        // FILTERS
-        params.append("min_price", filters.priceRange[0].toString());
-        params.append("max_price", filters.priceRange[1].toString());
+      // HERO SEARCH
 
-        if (filters.transmission.length)
-          params.append("transmission", filters.transmission.join(","));
+      if (location) params.append("location", location);
+      if (pickupDate) params.append("pickup_date", pickupDate);
+      if (returnDate) params.append("return_date", returnDate);
 
-        if (filters.fuel_type.length)
-          params.append("fuel_type", filters.fuel_type.join(","));
+      // PRICE RANGE
 
-        if (filters.passengers.length)
-          params.append("passengers", filters.passengers.join(","));
+      params.append("min_price", filters.priceRange[0].toString());
+      params.append("max_price", filters.priceRange[1].toString());
 
-        if (filters.luggage.length)
-          params.append("luggage", filters.luggage.join(","));
+      // FILTERS
 
-        if (filters.features.length)
-          params.append("features", filters.features.join(","));
+      if (filters.transmission.length)
+        params.append("transmission", filters.transmission.join(","));
 
-        const data = await getCars(params.toString());
+      if (filters.fuel_type.length)
+        params.append("fuel_type", filters.fuel_type.join(","));
 
-        if (Array.isArray(data.items)) {
-          setCars(data.items);
-          setTotalPages(data.total_pages);
-        } else {
-          setCars([]);
-          setTotalPages(1);
-        }
+      if (filters.passengers.length)
+        params.append("passengers", filters.passengers.join(","));
 
-      } catch (err) {
-        console.error("Error fetching cars:", err);
-      } finally {
-        setLoading(false);
-      }
+      if (filters.luggage.length)
+        params.append("luggage", filters.luggage.join(","));
 
-    }, 300),
-    [location, pickupDate, returnDate]
-  );
+      if (filters.features.length)
+        params.append("features", filters.features.join(","));
+
+      const data = await getCars(params.toString());
+
+      setCars(data.items || []);
+      setTotalPages(data.total_pages || 1);
+
+    } catch (err) {
+
+      console.error("Error fetching cars:", err);
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
+  };
+
+  // ---------------- AUTO FETCH ----------------
 
   useEffect(() => {
+
     fetchCars(filters, sortOption, page);
-  }, [filters, sortOption, page, fetchCars]);
+
+  }, [filters, sortOption, page]);
+
+  // ---------------- HANDLERS ----------------
 
   const handleSearch = () => {
+
     setPage(1);
     fetchCars(filters, sortOption, 1);
+
   };
 
   const handleFilterChange = (newFilters: FiltersState) => {
+
     setPage(1);
     setFilters(newFilters);
+
   };
 
   const handleSortChange = (option: SortOption) => {
+
     setPage(1);
     setSortOption(option);
+
   };
 
   const handlePrevPage = () => setPage((p) => Math.max(1, p - 1));
   const handleNextPage = () => setPage((p) => Math.min(totalPages, p + 1));
+
+  // ---------------- UI ----------------
 
   return (
     <main>
@@ -200,34 +219,50 @@ export default function Home() {
           <div className="flex-1">
 
             <div className="flex justify-between items-center mb-8">
+
               <h2 className="text-2xl font-bold">
                 {cars.length} Vehicles Available
               </h2>
 
               <Sort onSortChange={handleSortChange} />
+
             </div>
 
 
             {loading ? (
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
                 {[...Array(pageSize)].map((_, i) => (
-                  <div key={i} className="h-80 bg-gray-100 rounded-3xl animate-pulse"></div>
+                  <div
+                    key={i}
+                    className="h-80 bg-gray-100 rounded-3xl animate-pulse"
+                  />
                 ))}
+
               </div>
+
             ) : cars.length > 0 ? (
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
                 {cars.map((car) => (
                   <CarCard key={car.id} car={car} />
                 ))}
+
               </div>
+
             ) : (
+
               <div className="text-center text-gray-500 mt-12">
                 No cars found
               </div>
+
             )}
 
 
             {totalPages > 1 && (
+
               <div className="flex justify-center items-center gap-4 mt-8">
 
                 <button
@@ -251,6 +286,7 @@ export default function Home() {
                 </button>
 
               </div>
+
             )}
 
           </div>
