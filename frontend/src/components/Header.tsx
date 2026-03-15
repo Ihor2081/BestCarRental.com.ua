@@ -9,12 +9,25 @@ import AuthModal from "./AuthModal";
 export default function Header() {
   const router = useRouter();
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     const checkAuth = () => {
       const token = localStorage.getItem("token");
+      const userStr = localStorage.getItem("user");
       setIsAuthorized(!!token);
+      
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          setUserRole(user.role);
+        } catch (e) {
+          setUserRole(null);
+        }
+      } else {
+        setUserRole(null);
+      }
     };
 
     checkAuth();
@@ -58,13 +71,23 @@ export default function Header() {
         <div className="flex items-center gap-4">
           {isAuthorized ? (
             <div className="flex items-center gap-4">
-              <Link 
-                href="/profile" 
-                className="flex items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-xl font-bold hover:bg-gray-100 transition-colors"
-              >
-                <User className="w-4 h-4" />
-                <span>My Profile</span>
-              </Link>
+              {userRole === "admin" ? (
+                <Link 
+                  href="/admin" 
+                  className="flex items-center gap-2 bg-black text-white px-4 py-2.5 rounded-xl font-bold hover:bg-gray-900 transition-colors"
+                >
+                  <User className="w-4 h-4" />
+                  <span>Admin Dashboard</span>
+                </Link>
+              ) : (
+                <Link 
+                  href="/profile" 
+                  className="flex items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-xl font-bold hover:bg-gray-100 transition-colors"
+                >
+                  <User className="w-4 h-4" />
+                  <span>My Profile</span>
+                </Link>
+              )}
               <button 
                 onClick={handleLogout}
                 className="flex items-center gap-2 text-red-500 font-bold hover:text-red-600 transition-colors"
@@ -92,7 +115,22 @@ export default function Header() {
             setIsAuthorized(true);
             setShowAuthModal(false);
             window.dispatchEvent(new Event("auth-change"));
-            router.push("/profile");
+            
+            const userStr = localStorage.getItem("user");
+            if (userStr) {
+              try {
+                const user = JSON.parse(userStr);
+                if (user.role === "admin") {
+                  router.push("/admin");
+                } else {
+                  router.push("/profile");
+                }
+              } catch (e) {
+                router.push("/profile");
+              }
+            } else {
+              router.push("/profile");
+            }
           }} 
         />
       )}

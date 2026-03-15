@@ -6,6 +6,13 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 
 - **Dynamic Car Listings**: Browse available vehicles with category and price information.
 - **Detailed Product Pages**: View specific car details, specifications, and select additional services.
+- **Admin Dashboard**:
+  - **Real-time Analytics**: Monitor monthly revenue, total bookings, and customer engagement.
+  - **Fleet Management**: Full CRUD operations for vehicles with status tracking and image management.
+  - **Booking Control**: Centralized view of all rentals with status filtering and search.
+  - **Customer Insights**: Detailed profiles with booking history and financial summaries.
+  - **Features & Discounts**: Manage rental duration discounts and additional services (insurance, GPS, etc.) with dynamic icons.
+  - **Support Integration**: Quick access to technical support via a dedicated Discord community modal.
 - **User Profile Management**:
   - **Personal Information**: View and manage account details.
   - **Booking History**: Track upcoming and completed rentals.
@@ -38,8 +45,27 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 - `GET /api/fleet`: Get detailed fleet information (Admin).
 
 ### Management (Admin)
-- `GET /api/bookings`: List all vehicle bookings.
-- `GET /api/customers`: List all registered customers and their stats.
+- `GET /api/admin/dashboard`: Real-time business analytics and trends.
+- `GET /api/admin/cars`: Full fleet list with booking counts.
+- `POST /api/admin/cars`: Add a new vehicle to the fleet.
+- `PUT /api/admin/cars/{id}`: Update vehicle details or status.
+- `DELETE /api/admin/cars/{id}`: Remove a vehicle (protected against active bookings).
+- `GET /api/admin/bookings`: List all bookings with search and status filters.
+- `GET /api/admin/users`: List all customers with spending and booking stats.
+- `GET /api/admin/settings`: Manage business profile (synced with admin user profile).
+- `GET /api/admin/users/{id}`: Retrieve detailed customer profile and booking history.
+- `GET /api/admin/discounts`: List all rental duration discounts.
+- `POST /api/admin/discounts`: Create a new rental discount.
+- `PUT /api/admin/discounts/{id}`: Update an existing discount.
+- `DELETE /api/admin/discounts/{id}`: Remove a discount.
+- `GET /api/admin/services`: List all additional rental services.
+- `POST /api/admin/services`: Create a new additional service.
+- `PUT /api/admin/services/{id}`: Update an existing service.
+- `DELETE /api/admin/services/{id}`: Remove a service.
+- `GET /api/admin/settings`: Retrieve business profile settings.
+- `PUT /api/admin/settings`: Update business profile (synced with admin user profile).
+- `POST /api/admin/change-password`: Securely update admin credentials.
+- `POST /api/admin/change-password`: Securely update admin credentials.
 
 ### System
 - `GET /db-status`: Check the health of the MySQL database connection.
@@ -50,46 +76,54 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 ├── backend/
 │   ├── main.py               # FastAPI application and API routes
 │   ├── auth.py               # Contains the authentication logic
+│   └── admin.py              # Modular router for all administrative functions and dashboard analytics.
 │   ├── database.py           # Async SQLAlchemy engine & session setup
 │   ├── models.py             # Database models
 │   ├── requirements.txt      # Python dependencies
-│   ├── .env.example          # Environment variables template
+│   └── .env.example          # Environment variables template
 
 ├── frontend/
 │   ├── src/
-│   │   ├── app/              # Next.js App Router (pages & layouts)
+│   │   ├── app/                             # Next.js App Router (pages & layouts)
 │   │   │   ├── about/
-│   │   │   │   └── page.tsx  # About page
+│   │   │   │   └── page.tsx                 # About page
 │   │   │   ├── admin/
-│   │   │   │   └── page.tsx  # Admin dashboard page
+│   │   │   │   └── page.tsx                 # Admin dashboard page
 │   │   │   ├── product/
-│   │   │   │   └── page.tsx  # Product details page
+│   │   │   │   └── page.tsx                 # Product details page
 │   │   │   ├── profile/
-│   │   │   │   └── page.tsx  # User profile page
-│   │   │   ├── globals.css   # Global styles
-│   │   │   ├── layout.tsx    # Root layout
-│   │   │   └── page.tsx      # Home page
+│   │   │   │   └── page.tsx                 # User profile page
+│   │   │   ├── globals.css                  # Global styles
+│   │   │   ├── layout.tsx                   # Root layout
+│   │   │   └── page.tsx                     # Home page
 │   │   │
-│   │   ├── components/       # Reusable React components
-│   │   │   ├── CarCard.tsx   # Car display card component
-│   │   │   ├── AuthModal.tsx # A unified modal for user registration and login.
-│   │   │   └── Header.tsx    # Navigation header
+│   │   ├── components/                      # Reusable React components
+│   │   │   ├── admin/
+│   │   │   │   ├── CarModal.tsx             # Form for adding and editing fleet vehicles.
+│   │   │   │   ├── CustomerDetailModal.tsx  # Detailed customer profile and history view.
+│   │   │   │   ├── DiscountModal.tsx        # Interface for managing rental duration discounts.
+│   │   │   │   ├── ServiceModal.tsx         # Interface for managing additional services.
+│   │   │   │   ├── SupportModal.tsx         # Discord support integration modal.
+│   │   │   │   └── ChangePasswordModal.tsx  # Secure admin password management.
+│   │   │   ├── CarCard.tsx                  # Car display card component
+│   │   │   ├── AuthModal.tsx                # A unified modal for user registration and login.
+│   │   │   └── Header.tsx                   # Navigation header
 │   │   │
 │   │   └── types/
-│   │       └── index.ts      # TypeScript type definitions
+│   │       └── index.ts                     # TypeScript type definitions
 │   │
-│   ├── next-env.d.ts         # Next.js TypeScript definitions
-│   ├── next.config.js        # Next.js configuration
-│   ├── postcss.config.mjs    # PostCSS configuration
-│   ├── tailwind.config.ts    # Tailwind CSS configuration
-│   ├── tsconfig.json         # TypeScript configuration
-│   ├── package.json          # Frontend dependencies & scripts
-│   └── package-lock.json     # Frontend lockfile
-├── package.json              # Root workspace configuration
-├── package-lock.json         # Root lockfile
-├── metadata.json             # Application metadata
-├── car_sharing.sql           # Database backup
-└── README.md                 # Project documentation
+│   ├── next-env.d.ts                        # Next.js TypeScript definitions
+│   ├── next.config.js                       # Next.js configuration
+│   ├── postcss.config.mjs                   # PostCSS configuration
+│   ├── tailwind.config.ts                   # Tailwind CSS configuration
+│   ├── tsconfig.json                        # TypeScript configuration
+│   ├── package.json                         # Frontend dependencies & scripts
+│   └── package-lock.json                    # Frontend lockfile
+├── package.json                             # Root workspace configuration
+├── package-lock.json                        # Root lockfile
+├── metadata.json                            # Application metadata
+├── car_sharing.sql                          # Database backup
+└── README.md                                # Project documentation
 ```
 
 ## 🚀 Getting Started
