@@ -1,13 +1,87 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
-  ArrowLeft, Star, Users, Briefcase, Gauge, Fuel, 
+  ArrowLeft, Users, Briefcase, Gauge, Fuel, 
   Check, Shield, Navigation, Baby, Wifi, MapPin, 
   Calendar, Clock 
 } from "lucide-react";
+import { Car } from "@/types";
 
 export default function ProductPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const idParam = searchParams.get("id");
+  const carId = idParam ? Number(idParam) : null;
+
+  const [car, setCar] = useState<Car | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!idParam) {
+      router.push("/");
+      return;
+    }
+
+    const parsedId = Number(idParam);
+    if (Number.isNaN(parsedId) || parsedId <= 0) {
+      setError("Invalid car ID");
+      setLoading(false);
+      return;
+    }
+
+    const loadCar = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const res = await fetch(`/api/cars/${parsedId}`);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error((data as any).detail || "Car not found");
+        }
+        const data = (await res.json()) as Car;
+        setCar(data);
+      } catch (err: any) {
+        setError(err?.message ?? "Failed to load car");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCar();
+  }, [idParam, router]);
+
+  if (loading) {
+    return (
+      <main className="container mx-auto px-4 max-w-7xl py-8">
+        <div className="min-h-[400px] flex items-center justify-center">
+          <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin" />
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !car) {
+    return (
+      <main className="container mx-auto px-4 max-w-7xl py-8">
+        <div className="bg-white p-10 rounded-3xl shadow-sm border border-red-200 text-red-700">
+          <h2 className="text-xl font-bold mb-4">Unable to load car</h2>
+          <p className="mb-6">{error || "Car not found."}</p>
+          <button
+            onClick={() => router.push("/")}
+            className="bg-black text-white px-6 py-3 rounded-2xl font-bold"
+          >
+            Back to All Cars
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="container mx-auto px-4 max-w-7xl py-8">
       {/* BREADCRUMB */}
@@ -22,9 +96,9 @@ export default function ProductPage() {
         <div className="product-main">
           {/* MAIN IMAGE */}
           <div className="car-hero-image mb-8">
-            <img 
-              src="https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=2070&auto=format&fit=crop" 
-              alt="Mercedes-Benz E-Class" 
+            <img
+              src={car.images}
+              alt={`${car.brand} ${car.model}`}
               className="rounded-2xl w-full shadow-lg"
               referrerPolicy="no-referrer"
             />
@@ -33,8 +107,14 @@ export default function ProductPage() {
           {/* CAR INFO HEADER */}
           <div className="flex flex-col sm:flex-row justify-between items-start mb-8 gap-4">
             <div>
-              <span className="bg-gray-800 text-white px-3 py-1 rounded-md text-xs font-semibold">Sedan</span>
-              <h1 className="text-4xl font-bold mt-2">Mercedes-Benz E-Class</h1>
+              <span className="bg-gray-800 text-white px-3 py-1 rounded-md text-xs font-semibold">
+                {car.status}
+              </span>
+              <h1 className="text-4xl font-bold mt-2">
+                {car.brand} {car.model}
+              </h1>
+              
+              {/*
               <div className="flex items-center gap-2 mt-2 text-yellow-500">
                 <div className="flex">
                   {[...Array(5)].map((_, i) => (
@@ -43,9 +123,10 @@ export default function ProductPage() {
                 </div>
                 <span className="text-gray-500 text-sm">(4.8 rating • 127 reviews)</span>
               </div>
+              */}
             </div>
             <div className="sm:text-right">
-              <div className="text-3xl font-bold">$120</div>
+              <div className="text-3xl font-bold">${car.price_per_day}</div>
               <div className="text-gray-500">per day</div>
             </div>
           </div>
@@ -55,17 +136,17 @@ export default function ProductPage() {
           {/* DESCRIPTION */}
           <div className="mb-8">
             <p className="text-gray-600 leading-relaxed">
-              Experience luxury and comfort with the Mercedes-Benz E-Class. This premium sedan combines elegant design with cutting-edge technology, perfect for business trips or special occasions.
+              {car.description || "No description available."}
             </p>
           </div>
 
           {/* SPECS GRID */}
           <div className="specs-grid grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
             {[
-              { icon: Users, label: "Passengers", value: "5" },
-              { icon: Briefcase, label: "Luggage", value: "3 Bags" },
-              { icon: Gauge, label: "Transmission", value: "Automatic" },
-              { icon: Fuel, label: "Fuel Type", value: "Gasoline" },
+              { icon: Users, label: "Passengers", value: car.passengers },
+              { icon: Briefcase, label: "Luggage", value: car.luggage },
+              { icon: Gauge, label: "Transmission", value: car.transmission?.charAt(0).toUpperCase() + car.transmission?.slice(1) },
+              { icon: Fuel, label: "Fuel Type", value: car.fuel_type?.charAt(0).toUpperCase() + car.fuel_type?.slice(1) }
             ].map((spec, i) => (
               <div key={i} className="spec-item bg-white p-4 rounded-xl flex items-center gap-3 border border-gray-100">
                 <spec.icon className="w-5 h-5 text-blue-600" />
@@ -81,14 +162,9 @@ export default function ProductPage() {
           <div className="mb-12">
             <h3 className="text-xl font-bold mb-6">Features & Amenities</h3>
             <div className="features-grid grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[
-                "Leather Interior", "Dual-Zone Climate Control", 
-                "Adaptive Cruise Control", "Premium Sound System", 
-                "Parking Sensors", "Bluetooth Connectivity", 
-                "LED Headlights", "Keyless Entry"
-              ].map((feature, i) => (
-                <div key={i} className="feature-item flex items-center gap-3 text-sm text-gray-600">
-                  <Check className="w-4 h-4 text-green-500" /> {feature}
+              {car.features?.split(",").map((feature) => (
+                <div key={feature} className="feature-item flex items-center gap-3 text-sm text-gray-600">
+                  <Check className="w-4 h-4 text-green-500" /> {feature.trim()}
                 </div>
               ))}
             </div>
@@ -178,12 +254,12 @@ export default function ProductPage() {
 
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-gray-600">
-                <span>$120 × 1 day</span>
-                <span>$120.00</span>
+                <span>${car.price_per_day} × 1 day</span>
+                <span>${car.price_per_day.toFixed(2)}</span>
               </div>
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span className="text-blue-600">$120.00</span>
+                <span className="text-blue-600">${car.price_per_day.toFixed(2)}</span>
               </div>
             </div>
 
