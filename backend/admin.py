@@ -9,7 +9,7 @@ import decimal
 
 from database import get_db
 from models import User, Car, Deal, RoleEnum, DealStatusEnum, CarStatusEnum, TransmissionEnum, FuelTypeEnum, AvailableDiscount, AdditionalService
-from auth import get_admin_user, get_password_hash, verify_password
+from backend.auth import get_admin_user, get_password_hash, verify_password
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
