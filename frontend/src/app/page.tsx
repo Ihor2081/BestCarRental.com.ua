@@ -101,14 +101,26 @@ export default function Home() {
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="h-80 bg-gray-100 rounded-3xl animate-pulse"></div>
+                   <div key={i} className="h-80 bg-gray-100 rounded-3xl animate-pulse"></div>
                 ))}
               </div>
-            ) : (
+            ) : cars.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {cars.map((car) => (
                   <CarCard key={car.id} car={car} />
                 ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">No vehicles found</h3>
+                <p className="text-gray-500 text-center max-w-xs">
+                  We couldn't find any cars in the database. Please check back later or contact support.
+                </p>
               </div>
             )}
           </div>
