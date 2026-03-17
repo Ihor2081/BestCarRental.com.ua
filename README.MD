@@ -85,6 +85,8 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 ```text
 ├── backend/
 │   ├── main.py               # FastAPI application and API routes
+│   ├── alembic.ini           # Configuration file for Alembic migrations.
+│   ├── migrations/           # Directory containing Alembic migration scripts and environment setup.
 │   ├── auth.py               # Contains the authentication logic
 │   ├── users.py              # Manages user profile data, statistics, and payment information. Includes strict validation for card numbers and expiration dates.
 │   └── admin.py              # Modular router for all administrative functions and dashboard analytics.
@@ -164,6 +166,25 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
    ```bash
    pip install -r backend/requirements.txt
    ```
+
+### Database Migrations (Alembic)
+
+To manage database schema changes, we use Alembic.
+
+#### Apply migrations
+```bash
+alembic upgrade head
+```
+
+#### Create new migration
+```bash
+alembic revision --autogenerate -m "message"
+```
+
+#### Rollback
+```bash
+alembic downgrade -1
+```
 
 ### Running the Application
 
