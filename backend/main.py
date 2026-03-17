@@ -29,14 +29,6 @@ async def get_cars(db: AsyncSession = Depends(get_db)):
         result = await db.execute(select(Car))
         cars = result.scalars().all()
         
-        if not cars:
-            return [
-                {"id": 1, "brand": "Mercedes-Benz", "model": "E-Class", "year": 2023, "license_plate": "MB-001", "transmission": "automatic", "fuel_type": "gasoline", "price_per_day": 120, "images": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=2070&auto=format&fit=crop", "status": "available", "passengers": 5, "luggage": 2, "bookings_count": 0},
-                {"id": 2, "brand": "Land Rover", "model": "Range Rover Sport", "year": 2022, "license_plate": "RR-002", "transmission": "automatic", "fuel_type": "gasoline", "price_per_day": 180, "images": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=2070&auto=format&fit=crop", "status": "available", "passengers": 5, "luggage": 3, "bookings_count": 0},
-                {"id": 3, "brand": "Porsche", "model": "911 Carrera", "year": 2023, "license_plate": "P-911", "transmission": "automatic", "fuel_type": "gasoline", "price_per_day": 350, "images": "https://images.unsplash.com/photo-1542362567-b07e54358753?q=80&w=2070&auto=format&fit=crop", "status": "available", "passengers": 2, "luggage": 1, "bookings_count": 0},
-                {"id": 4, "brand": "Tesla", "model": "Model 3", "year": 2023, "license_plate": "T-003", "transmission": "automatic", "fuel_type": "electricity", "price_per_day": 95, "images": "https://images.unsplash.com/photo-1560958089-b8a1929cea89?q=80&w=2070&auto=format&fit=crop", "status": "available", "passengers": 5, "luggage": 2, "bookings_count": 0}
-            ]
-            
         formatted_cars = []
         for car in cars:
             formatted_cars.append({
@@ -60,10 +52,7 @@ async def get_cars(db: AsyncSession = Depends(get_db)):
         return formatted_cars
     except Exception as e:
         print(f"Error fetching cars: {e}")
-        return [
-            {"id": 1, "brand": "Mercedes-Benz", "model": "E-Class", "year": 2023, "license_plate": "MB-001", "transmission": "automatic", "fuel_type": "gasoline", "price_per_day": 120, "images": "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=2070&auto=format&fit=crop", "status": "available", "passengers": 5, "luggage": 2, "bookings_count": 0},
-            {"id": 2, "brand": "Land Rover", "model": "Range Rover Sport", "year": 2022, "license_plate": "RR-002", "transmission": "automatic", "fuel_type": "gasoline", "price_per_day": 180, "images": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=2070&auto=format&fit=crop", "status": "available", "passengers": 5, "luggage": 3, "bookings_count": 0}
-        ]
+        raise HTTPException(status_code=500, detail="Error fetching cars from database")
 
 @app.get("/db-status")
 async def db_status(db: AsyncSession = Depends(get_db)):
