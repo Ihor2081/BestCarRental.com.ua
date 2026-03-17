@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import func, and_, or_, desc
+from sqlalchemy import func, and_, or_, desc, String
+from sqlalchemy.orm import selectinload, joinedload, contains_eager
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 from datetime import datetime, timedelta
@@ -288,7 +289,7 @@ async def get_admin_bookings(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(get_admin_user)
 ):
-    query = select(Deal).join(User).join(Car)
+    query = select(Deal).join(Deal.user).join(Deal.car).options(contains_eager(Deal.user), contains_eager(Deal.car))
     
     if status:
         query = query.where(Deal.status == status)
@@ -297,7 +298,7 @@ async def get_admin_bookings(
         query = query.where(
             or_(
                 User.name.ilike(f"%{search}%"),
-                func.cast(Deal.id, func.String).ilike(f"%{search}%")
+                func.cast(Deal.id, String).ilike(f"%{search}%")
             )
         )
     
@@ -387,7 +388,7 @@ async def get_customer_detail(user_id: int, db: AsyncSession = Depends(get_db), 
     
     # Booking history
     bookings_result = await db.execute(
-        select(Deal).where(Deal.user_id == user.id).order_by(desc(Deal.created_at))
+        select(Deal).where(Deal.user_id == user.id).options(joinedload(Deal.car)).order_by(desc(Deal.created_at))
     )
     bookings = bookings_result.scalars().all()
     booking_history = []
