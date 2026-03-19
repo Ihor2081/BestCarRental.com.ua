@@ -36,6 +36,7 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
   - [Tailwind CSS](https://tailwindcss.com/) (Styling)
   - [Framer Motion](https://www.framer.com/motion/) (Animations)
   - [Lucide React](https://lucide.dev/) (Icons)
+  - [Recharts](https://recharts.org/) (Data Visualization)
 
 ## 📡 API Endpoints
 
@@ -170,6 +171,16 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 ### Database Migrations (Alembic)
 
 To manage database schema changes, we use Alembic.
+
+#### Writes a version
+```bash
+alembic stamp head
+```
+
+#### Reads a version
+```bash
+alembic current
+```
 
 #### Apply migrations
 ```bash
