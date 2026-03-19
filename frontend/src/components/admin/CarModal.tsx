@@ -40,7 +40,7 @@ export default function CarModal({ car, onClose, onSave }: CarModalProps) {
     const { name, value, type } = e.target;
     setFormData({
       ...formData,
-      [name]: type === "number" ? parseFloat(value) : value
+      [name]: type === "number" ? (value === "" ? NaN : parseFloat(value)) : value
     });
   };
 
@@ -106,7 +106,7 @@ export default function CarModal({ car, onClose, onSave }: CarModalProps) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">Year</label>
-              <input type="number" name="year" value={formData.year} onChange={handleChange} required className="w-full px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-black/5" />
+              <input type="number" name="year" value={isNaN(formData.year as number) ? "" : formData.year} onChange={handleChange} required className="w-full px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-black/5" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">License Plate</label>
@@ -118,7 +118,7 @@ export default function CarModal({ car, onClose, onSave }: CarModalProps) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">Price Per Day ($)</label>
-              <input type="number" name="price_per_day" value={formData.price_per_day} onChange={handleChange} required className="w-full px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-black/5" />
+              <input type="number" name="price_per_day" value={isNaN(formData.price_per_day as number) ? "" : formData.price_per_day} onChange={handleChange} required className="w-full px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-black/5" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">Transmission</label>
@@ -137,11 +137,11 @@ export default function CarModal({ car, onClose, onSave }: CarModalProps) {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">Passengers</label>
-              <input type="number" name="passengers" value={formData.passengers} onChange={handleChange} className="w-full px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-black/5" />
+              <input type="number" name="passengers" value={isNaN(formData.passengers as number) ? "" : formData.passengers} onChange={handleChange} className="w-full px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-black/5" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">Luggage</label>
-              <input type="number" name="luggage" value={formData.luggage} onChange={handleChange} className="w-full px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-black/5" />
+              <input type="number" name="luggage" value={isNaN(formData.luggage as number) ? "" : formData.luggage} onChange={handleChange} className="w-full px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-black/5" />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">Status</label>
