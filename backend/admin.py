@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func, and_, or_, desc, String
 from sqlalchemy.orm import selectinload, joinedload, contains_eager
+from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 from datetime import datetime, timedelta
@@ -230,12 +231,17 @@ async def get_admin_cars(db: AsyncSession = Depends(get_db), admin: User = Depen
 
 @router.post("/cars", response_model=CarResponse)
 async def create_car(car_data: CarCreate, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
-    new_car = Car(**car_data.dict())
-    db.add(new_car)
-    await db.commit()
-    await db.refresh(new_car)
-    
-    return {**car_data.dict(), "id": new_car.id, "bookings_count": 0}
+    try:
+        new_car = Car(**car_data.dict())
+        db.add(new_car)
+        await db.commit()
+        await db.refresh(new_car)
+        return {**car_data.dict(), "id": new_car.id, "bookings_count": 0}
+    except IntegrityError as e:
+        await db.rollback()
+        if "license_plate" in str(e.orig):
+            raise HTTPException(status_code=400, detail=f"Car with license plate '{car_data.license_plate}' already exists.")
+        raise HTTPException(status_code=400, detail="Database integrity error occurred.")
 
 @router.put("/cars/{car_id}", response_model=CarResponse)
 async def update_car(car_id: int, car_data: CarUpdate, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
@@ -247,8 +253,14 @@ async def update_car(car_id: int, car_data: CarUpdate, db: AsyncSession = Depend
     for key, value in car_data.dict().items():
         setattr(car, key, value)
     
-    await db.commit()
-    await db.refresh(car)
+    try:
+        await db.commit()
+        await db.refresh(car)
+    except IntegrityError as e:
+        await db.rollback()
+        if "license_plate" in str(e.orig):
+            raise HTTPException(status_code=400, detail=f"Car with license plate '{car_data.license_plate}' already exists.")
+        raise HTTPException(status_code=400, detail="Database integrity error occurred.")
     
     bookings_count_result = await db.execute(
         select(func.count(Deal.id)).where(Deal.car_id == car.id)
@@ -465,11 +477,15 @@ async def get_discounts(db: AsyncSession = Depends(get_db), admin: User = Depend
 
 @router.post("/discounts", response_model=DiscountResponse)
 async def create_discount(data: DiscountCreate, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
-    new_discount = AvailableDiscount(**data.dict())
-    db.add(new_discount)
-    await db.commit()
-    await db.refresh(new_discount)
-    return new_discount
+    try:
+        new_discount = AvailableDiscount(**data.dict())
+        db.add(new_discount)
+        await db.commit()
+        await db.refresh(new_discount)
+        return new_discount
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Discount with these parameters already exists or overlaps.")
 
 @router.put("/discounts/{discount_id}", response_model=DiscountResponse)
 async def update_discount(discount_id: int, data: DiscountCreate, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
@@ -479,9 +495,13 @@ async def update_discount(discount_id: int, data: DiscountCreate, db: AsyncSessi
         raise HTTPException(status_code=404, detail="Discount not found")
     for key, value in data.dict().items():
         setattr(discount, key, value)
-    await db.commit()
-    await db.refresh(discount)
-    return discount
+    try:
+        await db.commit()
+        await db.refresh(discount)
+        return discount
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Discount with these parameters already exists or overlaps.")
 
 @router.delete("/discounts/{discount_id}")
 async def delete_discount(discount_id: int, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
@@ -502,11 +522,15 @@ async def get_services(db: AsyncSession = Depends(get_db), admin: User = Depends
 
 @router.post("/services", response_model=ServiceResponse)
 async def create_service(data: ServiceCreate, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
-    new_service = AdditionalService(**data.dict())
-    db.add(new_service)
-    await db.commit()
-    await db.refresh(new_service)
-    return new_service
+    try:
+        new_service = AdditionalService(**data.dict())
+        db.add(new_service)
+        await db.commit()
+        await db.refresh(new_service)
+        return new_service
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Service with this name already exists.")
 
 @router.put("/services/{service_id}", response_model=ServiceResponse)
 async def update_service(service_id: int, data: ServiceCreate, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
@@ -516,9 +540,13 @@ async def update_service(service_id: int, data: ServiceCreate, db: AsyncSession 
         raise HTTPException(status_code=404, detail="Service not found")
     for key, value in data.dict().items():
         setattr(service, key, value)
-    await db.commit()
-    await db.refresh(service)
-    return service
+    try:
+        await db.commit()
+        await db.refresh(service)
+        return service
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail="Service with this name already exists.")
 
 @router.delete("/services/{service_id}")
 async def delete_service(service_id: int, db: AsyncSession = Depends(get_db), admin: User = Depends(get_admin_user)):
