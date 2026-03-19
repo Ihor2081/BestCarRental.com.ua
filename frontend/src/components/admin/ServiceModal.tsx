@@ -21,6 +21,7 @@ export default function ServiceModal({ service, onClose, onSave }: ServiceModalP
     price: 0
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (service) {
@@ -36,6 +37,7 @@ export default function ServiceModal({ service, onClose, onSave }: ServiceModalP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
     try {
       const token = localStorage.getItem("token");
       const url = service ? `/api/admin/services/${service.id}` : "/api/admin/services";
@@ -54,9 +56,10 @@ export default function ServiceModal({ service, onClose, onSave }: ServiceModalP
         onSave();
       } else {
         const data = await response.json();
-        alert(data.detail || "Failed to save service");
+        setError(data.detail || "Failed to save service");
       }
-    } catch (error) {
+    } catch (error: any) {
+      setError(error.message || "An unexpected error occurred");
       console.error("Error saving service:", error);
     } finally {
       setLoading(false);
@@ -85,6 +88,11 @@ export default function ServiceModal({ service, onClose, onSave }: ServiceModalP
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-bold">
+                {error}
+              </div>
+            )}
             <div className="space-y-2">
               <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Icon</label>
               <div className="grid grid-cols-6 gap-2 p-4 bg-gray-50 rounded-2xl">
@@ -134,8 +142,8 @@ export default function ServiceModal({ service, onClose, onSave }: ServiceModalP
                 required
                 min="0"
                 step="0.01"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                value={isNaN(formData.price) ? "" : formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value === "" ? NaN : parseFloat(e.target.value) })}
                 className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl outline-none focus:border-black transition-all font-bold" 
               />
             </div>
