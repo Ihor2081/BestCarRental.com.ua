@@ -15,6 +15,10 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
   - **Support Integration**: Quick access to technical support via a dedicated Discord community modal.
 - **User Profile Management**:
   - **Personal Information**: View and manage account details.
+  - **Email Verification**: Secure registration flow with 6-digit email verification codes.
+  - **Password Management**: 
+    - Securely update account credentials with current password verification.
+    - **Forgot Password**: Self-service password recovery via email verification codes.
   - **Password Management**: Securely update account credentials with current password verification.
   - **Booking History**: Track upcoming and completed rentals.
   - **Payment Methods**: Manage saved cards with strict validation (16-digit numeric check and future expiration date enforcement).
@@ -41,8 +45,12 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 ## 📡 API Endpoints
 
 ### Authentication (`/api/auth`)
-- `POST /register`: Register a new user account.
-- `POST /login`: Authenticate user and return a JWT access token.
+- `POST /register`: Register a new user account (triggers verification email).
+- `POST /login`: Authenticate user and return a JWT access token (requires verified email).
+- `POST /verify-email`: Verify user email using a 6-digit code.
+- `POST /resend-verification`: Resend the email verification code (rate-limited).
+- `POST /forgot-password`: Request a password reset code via email (rate-limited).
+- `POST /reset-password`: Reset password using a valid verification code.
 
 ### User Profile (`/api/users`)
 - `GET /me`: Retrieve current user profile, stats, and booking history.
@@ -93,6 +101,7 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 │   └── admin.py              # Modular router for all administrative functions and dashboard analytics.
 │   ├── database.py           # Async SQLAlchemy engine & session setup
 │   ├── models.py             # Database models
+│   ├── email_service.py      #  Handles sending transactional emails for verification and password resets.
 │   ├── requirements.txt      # Python dependencies
 │   └── .env.example          # Environment variables template
 
@@ -124,6 +133,9 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 │   │   │   │   └── CardModal.tsx            # Secure interface for adding payment cards with real-time validation.
 │   │   │   ├── CarCard.tsx                  # Car display card component
 │   │   │   ├── AuthModal.tsx                # A unified modal for user registration and login.
+│   │   │   ├── VerifyEmailModal.tsx         # Secure interface for entering email verification codes.
+│   │   │   ├── ForgotPasswordModal.tsx      # Interface for requesting password reset codes.
+│   │   │   ├── ResetPasswordModal.tsx       # Form for setting a new password with code verification and cooldown timer.
 │   │   │   └── Header.tsx                   # Navigation header
 │   │   │
 │   │   └── types/
