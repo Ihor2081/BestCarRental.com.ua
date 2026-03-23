@@ -13,8 +13,5 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
-  },
-  "dependencies": {
-    "alembic": "^0.0.3"
   }
 }

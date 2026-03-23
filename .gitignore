@@ -1,5 +1,7 @@
 /backend/.env
 /backend/__pycache__/
 /backend/.venv/
+/backend/migrations/__pycache__/
+/backend/migrations/versions/__pycache__/
 node_modules
 frontend/.next/
