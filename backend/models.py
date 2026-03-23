@@ -23,6 +23,10 @@ class RoleEnum(str, enum.Enum):
     client = 'client'
     admin = 'admin'
 
+class VerificationTypeEnum(str, enum.Enum):
+    reset_password = 'reset_password'
+    verify_email = 'verify_email'
+
 class DealStatusEnum(str, enum.Enum):
     pending = 'pending'
     confirmed = 'confirmed'
@@ -44,6 +48,7 @@ class User(Base):
     address = Column(String(255), nullable=True)
     card_number = Column(String(50), nullable=True)
     expires = Column(Date, nullable=True)
+    is_verified = Column(SmallInteger, default=0, nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
     updated_at = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
 
@@ -89,6 +94,17 @@ class Deal(Base):
 
     user = relationship("User", back_populates="deals")
     car = relationship("Car", back_populates="deals")
+
+class VerificationCode(Base):
+    __tablename__ = "verification_codes"
+
+    id = Column(BigInteger, primary_key=True, index=True, autoincrement=True)
+    email = Column(String(150), nullable=False, index=True)
+    type = Column(Enum(VerificationTypeEnum), nullable=False)
+    code_hash = Column(String(255), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    is_used = Column(SmallInteger, default=0, nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
 
 class AvailableDiscount(Base):
     __tablename__ = "available_discounts"

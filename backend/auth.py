@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import update, func as sa_func
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -9,10 +10,12 @@ from datetime import datetime, timedelta
 from jose import jwt
 from passlib.context import CryptContext
 import os
+import random
 from dotenv import load_dotenv
 
 from database import get_db
-from models import User, RoleEnum
+from models import User, RoleEnum, VerificationCode, VerificationTypeEnum
+from email_service import send_reset_email, send_verification_email
 
 load_dotenv()
 
@@ -44,6 +47,21 @@ class Token(BaseModel):
     access_token: str
     token_type: str
     user: dict
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str
+
+class VerifyEmailRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
 
 # --- Helper Functions ---
 
@@ -93,6 +111,24 @@ async def register(user_data: UserRegister, db: AsyncSession = Depends(get_db)):
     try:
         await db.commit()
         await db.refresh(new_user)
+        
+        # Generate verification code
+        code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+        code_hash = get_password_hash(code)
+        expires_at = datetime.utcnow() + timedelta(hours=24)
+        
+        verification_code = VerificationCode(
+            email=user_data.email,
+            type=VerificationTypeEnum.verify_email,
+            code_hash=code_hash,
+            expires_at=expires_at
+        )
+        db.add(verification_code)
+        await db.commit()
+        
+        # Send verification email
+        send_verification_email(user_data.email, code)
+        
     except IntegrityError:
         await db.rollback()
         raise HTTPException(
@@ -114,6 +150,12 @@ async def login(user_data: UserLogin, db: AsyncSession = Depends(get_db)):
             headers={"WWW-Authenticate": "Bearer"},
         )
     
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email not verified. Please verify your email to log in."
+        )
+    
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.email, "role": user.role}, expires_delta=access_token_expires
@@ -129,6 +171,194 @@ async def login(user_data: UserLogin, db: AsyncSession = Depends(get_db)):
             "role": user.role
         }
     }
+
+@router.post("/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
+    # Rate limiting: Max 5 requests per hour per email
+    one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+    result = await db.execute(
+        select(sa_func.count(VerificationCode.id))
+        .where(VerificationCode.email == request.email)
+        .where(VerificationCode.type == VerificationTypeEnum.reset_password)
+        .where(VerificationCode.created_at >= one_hour_ago)
+    )
+    request_count = result.scalar()
+    
+    if request_count >= 5:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many reset requests. Please try again later."
+        )
+
+    # Find user
+    result = await db.execute(select(User).where(User.email == request.email))
+    user = result.scalars().first()
+    
+    # Always return 200 to prevent user enumeration
+    if user:
+        # Generate 6-digit code
+        code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+        code_hash = get_password_hash(code)
+        expires_at = datetime.utcnow() + timedelta(minutes=15)
+        
+        # Invalidate previous codes for this email
+        await db.execute(
+            update(VerificationCode)
+            .where(VerificationCode.email == request.email)
+            .where(VerificationCode.type == VerificationTypeEnum.reset_password)
+            .where(VerificationCode.is_used == 0)
+            .values(is_used=1)
+        )
+        
+        # Save new code
+        reset_code = VerificationCode(
+            email=request.email,
+            type=VerificationTypeEnum.reset_password,
+            code_hash=code_hash,
+            expires_at=expires_at
+        )
+        db.add(reset_code)
+        await db.commit()
+        
+        # Send email
+        send_reset_email(request.email, code)
+        
+    return {"status": "success", "message": "If the account exists, a verification code has been sent."}
+
+@router.post("/reset-password")
+async def reset_password(request: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+    # Find the latest unused code for this email
+    result = await db.execute(
+        select(VerificationCode)
+        .where(VerificationCode.email == request.email)
+        .where(VerificationCode.type == VerificationTypeEnum.reset_password)
+        .where(VerificationCode.is_used == 0)
+        .order_by(VerificationCode.created_at.desc())
+    )
+    reset_code = result.scalars().first()
+    
+    if not reset_code:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code")
+    
+    # Check expiration
+    if datetime.utcnow() > reset_code.expires_at:
+        raise HTTPException(status_code=400, detail="Verification code has expired")
+    
+    # Verify code
+    if not verify_password(request.code, reset_code.code_hash):
+        raise HTTPException(status_code=400, detail="Invalid verification code")
+    
+    # Update user password
+    result = await db.execute(select(User).where(User.email == request.email))
+    user = result.scalars().first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.password_hash = get_password_hash(request.new_password)
+    
+    # Mark code as used
+    reset_code.is_used = 1
+    
+    await db.commit()
+    
+    return {"status": "success", "message": "Password updated successfully"}
+
+@router.post("/verify-email")
+async def verify_email(request: VerifyEmailRequest, db: AsyncSession = Depends(get_db)):
+    # Find the latest unused code for this email
+    result = await db.execute(
+        select(VerificationCode)
+        .where(VerificationCode.email == request.email)
+        .where(VerificationCode.type == VerificationTypeEnum.verify_email)
+        .where(VerificationCode.is_used == 0)
+        .order_by(VerificationCode.created_at.desc())
+    )
+    verification_code = result.scalars().first()
+    
+    if not verification_code:
+        raise HTTPException(status_code=400, detail="Invalid or expired verification code")
+    
+    # Check expiration
+    if datetime.utcnow() > verification_code.expires_at:
+        raise HTTPException(status_code=400, detail="Verification code has expired")
+    
+    # Verify code
+    if not verify_password(request.code, verification_code.code_hash):
+        raise HTTPException(status_code=400, detail="Invalid verification code")
+    
+    # Update user verification status
+    result = await db.execute(select(User).where(User.email == request.email))
+    user = result.scalars().first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.is_verified = 1
+    
+    # Mark code as used
+    verification_code.is_used = 1
+    
+    await db.commit()
+    
+    return {"status": "success", "message": "Email verified successfully"}
+
+@router.post("/resend-verification")
+async def resend_verification(request: ResendVerificationRequest, db: AsyncSession = Depends(get_db)):
+    # Find user
+    result = await db.execute(select(User).where(User.email == request.email))
+    user = result.scalars().first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.is_verified:
+        return {"status": "success", "message": "Email already verified"}
+    
+    # Rate limiting: Max 5 requests per hour per email
+    one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+    result = await db.execute(
+        select(sa_func.count(VerificationCode.id))
+        .where(VerificationCode.email == request.email)
+        .where(VerificationCode.type == VerificationTypeEnum.verify_email)
+        .where(VerificationCode.created_at >= one_hour_ago)
+    )
+    request_count = result.scalar()
+    
+    if request_count >= 5:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many verification requests. Please try again later."
+        )
+
+    # Generate 6-digit code
+    code = "".join([str(random.randint(0, 9)) for _ in range(6)])
+    code_hash = get_password_hash(code)
+    expires_at = datetime.utcnow() + timedelta(hours=24)
+    
+    # Invalidate previous codes
+    await db.execute(
+        update(VerificationCode)
+        .where(VerificationCode.email == request.email)
+        .where(VerificationCode.type == VerificationTypeEnum.verify_email)
+        .where(VerificationCode.is_used == 0)
+        .values(is_used=1)
+    )
+    
+    # Save new code
+    verification_code = VerificationCode(
+        email=request.email,
+        type=VerificationTypeEnum.verify_email,
+        code_hash=code_hash,
+        expires_at=expires_at
+    )
+    db.add(verification_code)
+    await db.commit()
+    
+    # Send verification email
+    send_verification_email(request.email, code)
+    
+    return {"status": "success", "message": "Verification code resent successfully"}
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
     credentials_exception = HTTPException(
