@@ -3,15 +3,22 @@ from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import declarative_base
 
-load_dotenv()
+# Load environment variables
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+if not os.path.exists(env_path):
+    env_path = os.path.join(os.path.dirname(__file__), '.env.example')
+load_dotenv(dotenv_path=env_path)
 
 # Build the connection string from environment variables
 # Format for aiomysql: mysql+aiomysql://user:password@host:port/dbname
-DB_USER = os.getenv("DB_USER", "root")
+DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
-DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
-DB_PORT = os.getenv("DB_PORT", "3306")
-DB_NAME = os.getenv("DB_NAME", "car_sharing")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = os.getenv("DB_PORT")
+DB_NAME = os.getenv("DB_NAME")
+
+if not all([DB_USER, DB_HOST, DB_PORT, DB_NAME]):
+    raise ValueError(f"Missing required database configuration in {env_path}")
 
 SQLALCHEMY_DATABASE_URL = f"mysql+aiomysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
