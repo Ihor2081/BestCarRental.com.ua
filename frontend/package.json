@@ -15,7 +15,6 @@
     "concurrently": "^9.2.1",
     "d3": "^7.9.0",
     "framer-motion": "latest",
-    "lodash": "^4.17.23",
     "lucide-react": "latest",
     "next": "latest",
     "react": "latest",
