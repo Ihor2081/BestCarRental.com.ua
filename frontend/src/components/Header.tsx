@@ -34,7 +34,7 @@ export default function Header() {
 
     // Listen for storage changes
     window.addEventListener("storage", checkAuth);
-
+    
     // Custom event for same-window updates
     window.addEventListener("auth-change", checkAuth);
 
@@ -71,7 +71,6 @@ export default function Header() {
         <div className="flex items-center gap-4">
           {isAuthorized ? (
             <div className="flex items-center gap-4">
-              
               {userRole === "admin" ? (
                 <Link 
                   href="/admin" 
@@ -116,7 +115,6 @@ export default function Header() {
             setIsAuthorized(true);
             setShowAuthModal(false);
             window.dispatchEvent(new Event("auth-change"));
-            
             
             const userStr = localStorage.getItem("user");
             if (userStr) {
