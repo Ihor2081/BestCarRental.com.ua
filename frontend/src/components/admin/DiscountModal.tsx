@@ -17,6 +17,7 @@ export default function DiscountModal({ discount, onClose, onSave }: DiscountMod
     discount_percent: 5
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (discount) {
@@ -31,6 +32,7 @@ export default function DiscountModal({ discount, onClose, onSave }: DiscountMod
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
     try {
       const token = localStorage.getItem("token");
       const url = discount ? `/api/admin/discounts/${discount.id}` : "/api/admin/discounts";
@@ -49,9 +51,10 @@ export default function DiscountModal({ discount, onClose, onSave }: DiscountMod
         onSave();
       } else {
         const data = await response.json();
-        alert(data.detail || "Failed to save discount");
+        setError(data.detail || "Failed to save discount");
       }
-    } catch (error) {
+    } catch (error: any) {
+      setError(error.message || "An unexpected error occurred");
       console.error("Error saving discount:", error);
     } finally {
       setLoading(false);
@@ -80,6 +83,11 @@ export default function DiscountModal({ discount, onClose, onSave }: DiscountMod
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {error && (
+              <div className="p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-bold">
+                {error}
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Min Days</label>
@@ -87,8 +95,8 @@ export default function DiscountModal({ discount, onClose, onSave }: DiscountMod
                   type="number" 
                   required
                   min="1"
-                  value={formData.min_days}
-                  onChange={(e) => setFormData({ ...formData, min_days: parseInt(e.target.value) })}
+                  value={isNaN(formData.min_days) ? "" : formData.min_days}
+                  onChange={(e) => setFormData({ ...formData, min_days: e.target.value === "" ? NaN : parseInt(e.target.value) })}
                   className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl outline-none focus:border-black transition-all font-bold" 
                 />
               </div>
@@ -98,8 +106,8 @@ export default function DiscountModal({ discount, onClose, onSave }: DiscountMod
                   type="number" 
                   required
                   min="1"
-                  value={formData.max_days}
-                  onChange={(e) => setFormData({ ...formData, max_days: parseInt(e.target.value) })}
+                  value={isNaN(formData.max_days) ? "" : formData.max_days}
+                  onChange={(e) => setFormData({ ...formData, max_days: e.target.value === "" ? NaN : parseInt(e.target.value) })}
                   className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl outline-none focus:border-black transition-all font-bold" 
                 />
               </div>
@@ -113,8 +121,8 @@ export default function DiscountModal({ discount, onClose, onSave }: DiscountMod
                 min="0"
                 max="100"
                 step="0.1"
-                value={formData.discount_percent}
-                onChange={(e) => setFormData({ ...formData, discount_percent: parseFloat(e.target.value) })}
+                value={isNaN(formData.discount_percent) ? "" : formData.discount_percent}
+                onChange={(e) => setFormData({ ...formData, discount_percent: e.target.value === "" ? NaN : parseFloat(e.target.value) })}
                 className="w-full px-6 py-4 bg-gray-50 border border-transparent rounded-2xl outline-none focus:border-black transition-all font-bold" 
               />
             </div>
