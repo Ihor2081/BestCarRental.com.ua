@@ -61,6 +61,7 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 
 ### Vehicles & Fleet
 - `GET /api/cars`: Retrieve a list of all available cars for rental.
+- `GET /api/cars/{car_id}`: Retrieve one car by ID.
 - `GET /api/fleet`: Get detailed fleet information (Admin).
 
 ### Management (Admin)
@@ -98,7 +99,8 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 │   ├── migrations/           # Directory containing Alembic migration scripts and environment setup.
 │   ├── auth.py               # Contains the authentication logic
 │   ├── users.py              # Manages user profile data, statistics, and payment information. Includes strict validation for card numbers and expiration dates.
-│   └── admin.py              # Modular router for all administrative functions and dashboard analytics.
+│   ├── admin.py              # Modular router for all administrative functions and dashboard analytics.
+│   ├── cars.py               # Modular router for public car list/detail endpoints.
 │   ├── database.py           # Async SQLAlchemy engine & session setup
 │   ├── models.py             # Database models
 │   ├── email_service.py      #  Handles sending transactional emails for verification and password resets.
