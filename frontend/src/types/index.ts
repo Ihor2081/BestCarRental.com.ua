@@ -3,18 +3,26 @@ export interface Car {
   brand: string;
   model: string;
   year: number;
+  category?: string;
   license_plate: string;
   color?: string;
   passengers: number;
   luggage: number;
   transmission: 'automatic' | 'mechanic';
   fuel_type: 'gasoline' | 'gas' | 'electricity';
-  features?: string;
+  features?: string[];
   description?: string;
   images?: string;
+  image?: string;
   price_per_day: number;
   status: 'available' | 'reserved' | 'in_service' | 'inactive';
   bookings_count: number;
+}
+
+export interface PaginatedCars {
+  items: Car[];
+  total_pages: number;
+  total_items: number;
 }
 
 export interface Booking {
@@ -70,4 +78,31 @@ export interface AdditionalService {
   name: string;
   desc?: string;
   price: number;
+}
+
+export interface Card {
+  id: number;
+  card_number: string;
+  expires: string;
+}
+
+export interface UserStats {
+  total_deals: number;
+  active_deals: number;
+  total_spent: number;
+  reward_points: number;
+}
+
+export interface UserMe {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  drivers_license?: string;
+  address?: string;
+  created_at: string;
+  cards: Card[];
+  stats: UserStats;
+  booking_history: any[];
+  role: string;
 }
