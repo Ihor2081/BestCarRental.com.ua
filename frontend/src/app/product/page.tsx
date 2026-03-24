@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import {
-  ArrowLeft, Star, Users, Briefcase, Gauge, Fuel,
-  Check, Shield, Navigation, Baby, Wifi, MapPin,
-  Calendar, Clock
+import { 
+  ArrowLeft, Star, Users, Briefcase, Gauge, Fuel, 
+  Check, Shield, Navigation, Baby, Wifi, MapPin, 
+  Calendar, Clock 
 } from "lucide-react";
 
 export default function ProductPage() {
@@ -22,9 +22,9 @@ export default function ProductPage() {
         <div className="product-main">
           {/* MAIN IMAGE */}
           <div className="car-hero-image mb-8">
-            <img
-              src="https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=2070&auto=format&fit=crop"
-              alt="Mercedes-Benz E-Class"
+            <img 
+              src="https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=2070&auto=format&fit=crop" 
+              alt="Mercedes-Benz E-Class" 
               className="rounded-2xl w-full shadow-lg"
               referrerPolicy="no-referrer"
             />
@@ -82,9 +82,9 @@ export default function ProductPage() {
             <h3 className="text-xl font-bold mb-6">Features & Amenities</h3>
             <div className="features-grid grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
-                "Leather Interior", "Dual-Zone Climate Control",
-                "Adaptive Cruise Control", "Premium Sound System",
-                "Parking Sensors", "Bluetooth Connectivity",
+                "Leather Interior", "Dual-Zone Climate Control", 
+                "Adaptive Cruise Control", "Premium Sound System", 
+                "Parking Sensors", "Bluetooth Connectivity", 
                 "LED Headlights", "Keyless Entry"
               ].map((feature, i) => (
                 <div key={i} className="feature-item flex items-center gap-3 text-sm text-gray-600">
@@ -138,9 +138,9 @@ export default function ProductPage() {
                 <label className="block text-sm font-semibold mb-2">Pick-up Location</label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="City or Airport"
+                  <input 
+                    type="text" 
+                    placeholder="City or Airport" 
                     defaultValue="San Francisco Airport"
                     className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none text-sm"
                   />
@@ -151,9 +151,9 @@ export default function ProductPage() {
                 <label className="block text-sm font-semibold mb-2">Pick-up Date</label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="dd.mm.yyyy"
+                  <input 
+                    type="text" 
+                    placeholder="dd.mm.yyyy" 
                     defaultValue="20.02.2026"
                     className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none text-sm"
                   />
@@ -164,9 +164,9 @@ export default function ProductPage() {
                 <label className="block text-sm font-semibold mb-2">Return Date</label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="dd.mm.yyyy"
+                  <input 
+                    type="text" 
+                    placeholder="dd.mm.yyyy" 
                     defaultValue="21.02.2026"
                     className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none text-sm"
                   />
