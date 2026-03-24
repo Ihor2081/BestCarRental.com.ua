@@ -8,7 +8,7 @@ import {
   Check, Shield, Navigation, Baby, Wifi, MapPin,
   Calendar, Clock
 } from "lucide-react";
-import type { Car } from "@/types";
+import type { Car, AdditionalService } from "@/types";
 
 function ProductPageFallback() {
   return (
@@ -26,6 +26,10 @@ function ProductPageContent() {
   const [car, setCar] = useState<Car | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [services, setServices] = useState<AdditionalService[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(true);
+  const [servicesError, setServicesError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!Number.isInteger(carId) || carId <= 0) {
@@ -67,6 +71,37 @@ function ProductPageContent() {
     loadCar();
     return () => controller.abort();
   }, [carId]);
+
+  useEffect(() => {
+    async function fetchServices() {
+      try {
+        setServicesLoading(true);
+        setServicesError(null);
+        const response = await fetch('/api/services');
+        if (!response.ok) {
+          throw new Error('Failed to load services');
+        }
+        const data: AdditionalService[] = await response.json();
+        setServices(data);
+      } catch (err) {
+        setServicesError((err as Error).message);
+      } finally {
+        setServicesLoading(false);
+      }
+    }
+    fetchServices();
+  }, []);
+
+  const iconMap: Record<string, React.ComponentType<any>> = {
+    Shield,
+    Navigation,
+    Baby,
+    Wifi
+  };
+
+  function getIconComponent(iconName: string) {
+    return iconMap[iconName] || Check; // Fallback to Check icon
+  }
 
   const featureList = useMemo(() => {
     if (!car?.features) return [];
@@ -201,32 +236,38 @@ function ProductPageContent() {
           <div className="mb-12">
             <h3 className="text-xl font-bold mb-6">Additional Services</h3>
             <div className="services-list flex flex-col gap-4">
-              {[
-                { icon: Shield, name: "Full Insurance Coverage", desc: "Comprehensive protection with zero deductible", price: 25 },
-                { icon: Navigation, name: "GPS Navigation", desc: "Latest navigation system with real-time traffic", price: 10, checked: true },
-                { icon: Baby, name: "Child Safety Seat", desc: "High-quality child seat for safety", price: 8 },
-                { icon: Wifi, name: "Mobile WiFi Hotspot", desc: "Unlimited data for your journey", price: 12 },
-              ].map((service, i) => (
-                <label key={i} className="service-card cursor-pointer group">
-                  <input type="checkbox" className="hidden peer" defaultChecked={service.checked} />
-                  <div className="service-content bg-white border border-gray-200 rounded-xl p-5 transition-all peer-checked:border-blue-500 peer-checked:bg-blue-50 group-hover:border-gray-300">
-                    <div className="flex items-center gap-4">
-                      <div className="checkbox-custom w-5 h-5 border-2 border-gray-300 rounded relative peer-checked:bg-blue-600 peer-checked:border-blue-600">
-                        {/* Custom checkmark handled by peer-checked in CSS or just use a lucide icon if easier */}
+              {servicesLoading ? (
+                <p className="text-gray-600">Loading services...</p>
+              ) : servicesError ? (
+                <p className="text-red-600">Failed to load services: {servicesError}</p>
+              ) : services.length > 0 ? (
+                services.map((service) => {
+                  const IconComponent = getIconComponent(service.icon);
+                  return (
+                    <label key={service.id} className="service-card cursor-pointer group">
+                      <input type="checkbox" className="hidden peer" />
+                      <div className="service-content bg-white border border-gray-200 rounded-xl p-5 transition-all peer-checked:border-blue-500 peer-checked:bg-blue-50 group-hover:border-gray-300">
+                        <div className="flex items-center gap-4">
+                          <div className="checkbox-custom w-5 h-5 border-2 border-gray-300 rounded relative peer-checked:bg-blue-600 peer-checked:border-blue-600">
+                            {/* Custom checkmark handled by peer-checked in CSS or just use a lucide icon if easier */}
+                          </div>
+                          <IconComponent className="w-6 h-6 text-gray-700" />
+                          <div className="flex-1">
+                            <div className="font-bold">{service.name}</div>
+                            <div className="text-sm text-gray-500">{service.desc || "No description available"}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold">${service.price}</div>
+                            <div className="text-xs text-gray-500">per day</div>
+                          </div>
+                        </div>
                       </div>
-                      <service.icon className="w-6 h-6 text-gray-700" />
-                      <div className="flex-1">
-                        <div className="font-bold">{service.name}</div>
-                        <div className="text-sm text-gray-500">{service.desc}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold">${service.price}</div>
-                        <div className="text-xs text-gray-500">per day</div>
-                      </div>
-                    </div>
-                  </div>
-                </label>
-              ))}
+                    </label>
+                  );
+                })
+              ) : (
+                <p className="text-gray-500">No additional services available.</p>
+              )}
             </div>
           </div>
         </div>
