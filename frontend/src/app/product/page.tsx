@@ -1,13 +1,117 @@
 "use client";
 
 import Link from "next/link";
-import { 
-  ArrowLeft, Star, Users, Briefcase, Gauge, Fuel, 
-  Check, Shield, Navigation, Baby, Wifi, MapPin, 
-  Calendar, Clock 
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  ArrowLeft, Star, Users, Briefcase, Gauge, Fuel,
+  Check, Shield, Navigation, Baby, Wifi, MapPin,
+  Calendar, Clock
 } from "lucide-react";
+import type { Car } from "@/types";
 
-export default function ProductPage() {
+function ProductPageFallback() {
+  return (
+    <main className="container mx-auto px-4 max-w-7xl py-8">
+      <p className="text-gray-600">Loading car details...</p>
+    </main>
+  );
+}
+
+function ProductPageContent() {
+  const searchParams = useSearchParams();
+  const carIdParam = searchParams.get("id");
+  const carId = carIdParam ? Number(carIdParam) : NaN;
+
+  const [car, setCar] = useState<Car | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!Number.isInteger(carId) || carId <= 0) {
+      setLoading(false);
+      setError("Invalid car ID in URL.");
+      return;
+    }
+
+    const controller = new AbortController();
+
+    async function loadCar() {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch(`/api/cars/${carId}`, {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error("Car not found.");
+          }
+          throw new Error("Failed to load car details.");
+        }
+
+        const payload: Car = await response.json();
+        setCar(payload);
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          setError((err as Error).message || "Unexpected error.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadCar();
+    return () => controller.abort();
+  }, [carId]);
+
+  const featureList = useMemo(() => {
+    if (!car?.features) return [];
+    if (Array.isArray(car.features)) return car.features;
+    return String(car.features)
+      .split(",")
+      .map((feature) => feature.trim())
+      .filter(Boolean);
+  }, [car]);
+
+  const capitalizeText = (text: string) => {
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  };
+
+  const heroImage = useMemo(() => {
+    const raw = car?.images?.trim();
+    if (!raw) return "https://placehold.co/600x400";
+    if (raw.includes(",")) return raw.split(",")[0].trim();
+    return raw;
+  }, [car]);
+
+  if (loading) {
+    return (
+      <main className="container mx-auto px-4 max-w-7xl py-8">
+        <p className="text-gray-600">Loading car details...</p>
+      </main>
+    );
+  }
+
+  if (error || !car) {
+    return (
+      <main className="container mx-auto px-4 max-w-7xl py-8">
+        <div className="mb-6">
+          <Link href="/" className="text-gray-600 flex items-center gap-2 hover:text-black transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Back to All Cars
+          </Link>
+        </div>
+        <p className="text-red-600 font-medium">{error ?? "Car not found."}</p>
+      </main>
+    );
+  }
+
+  const carTitle = `${car.brand} ${car.model}`;
+  const formattedPrice = Number(car.price_per_day).toFixed(2);
+
   return (
     <main className="container mx-auto px-4 max-w-7xl py-8">
       {/* BREADCRUMB */}
@@ -22,9 +126,9 @@ export default function ProductPage() {
         <div className="product-main">
           {/* MAIN IMAGE */}
           <div className="car-hero-image mb-8">
-            <img 
-              src="https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=2070&auto=format&fit=crop" 
-              alt="Mercedes-Benz E-Class" 
+            <img
+              src={heroImage}
+              alt={carTitle}
               className="rounded-2xl w-full shadow-lg"
               referrerPolicy="no-referrer"
             />
@@ -33,8 +137,8 @@ export default function ProductPage() {
           {/* CAR INFO HEADER */}
           <div className="flex flex-col sm:flex-row justify-between items-start mb-8 gap-4">
             <div>
-              <span className="bg-gray-800 text-white px-3 py-1 rounded-md text-xs font-semibold">Sedan</span>
-              <h1 className="text-4xl font-bold mt-2">Mercedes-Benz E-Class</h1>
+              <span className="bg-gray-800 text-white px-3 py-1 rounded-md text-xs font-semibold">{car.status}</span>
+              <h1 className="text-4xl font-bold mt-2">{carTitle}</h1>
               <div className="flex items-center gap-2 mt-2 text-yellow-500">
                 <div className="flex">
                   {[...Array(5)].map((_, i) => (
@@ -45,7 +149,7 @@ export default function ProductPage() {
               </div>
             </div>
             <div className="sm:text-right">
-              <div className="text-3xl font-bold">$120</div>
+              <div className="text-3xl font-bold">${formattedPrice}</div>
               <div className="text-gray-500">per day</div>
             </div>
           </div>
@@ -55,17 +159,17 @@ export default function ProductPage() {
           {/* DESCRIPTION */}
           <div className="mb-8">
             <p className="text-gray-600 leading-relaxed">
-              Experience luxury and comfort with the Mercedes-Benz E-Class. This premium sedan combines elegant design with cutting-edge technology, perfect for business trips or special occasions.
+              {car.description || "No description available for this car yet."}
             </p>
           </div>
 
           {/* SPECS GRID */}
           <div className="specs-grid grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
             {[
-              { icon: Users, label: "Passengers", value: "5" },
-              { icon: Briefcase, label: "Luggage", value: "3 Bags" },
-              { icon: Gauge, label: "Transmission", value: "Automatic" },
-              { icon: Fuel, label: "Fuel Type", value: "Gasoline" },
+              { icon: Users, label: "Passengers", value: String(car.passengers) },
+              { icon: Briefcase, label: "Luggage", value: `${car.luggage} Bags` },
+              { icon: Gauge, label: "Transmission", value: capitalizeText(car.transmission) },
+              { icon: Fuel, label: "Fuel Type", value: capitalizeText(car.fuel_type) },
             ].map((spec, i) => (
               <div key={i} className="spec-item bg-white p-4 rounded-xl flex items-center gap-3 border border-gray-100">
                 <spec.icon className="w-5 h-5 text-blue-600" />
@@ -81,16 +185,15 @@ export default function ProductPage() {
           <div className="mb-12">
             <h3 className="text-xl font-bold mb-6">Features & Amenities</h3>
             <div className="features-grid grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {[
-                "Leather Interior", "Dual-Zone Climate Control", 
-                "Adaptive Cruise Control", "Premium Sound System", 
-                "Parking Sensors", "Bluetooth Connectivity", 
-                "LED Headlights", "Keyless Entry"
-              ].map((feature, i) => (
-                <div key={i} className="feature-item flex items-center gap-3 text-sm text-gray-600">
-                  <Check className="w-4 h-4 text-green-500" /> {feature}
-                </div>
-              ))}
+              {featureList.length > 0 ? (
+                featureList.map((feature, i) => (
+                  <div key={i} className="feature-item flex items-center gap-3 text-sm text-gray-600">
+                    <Check className="w-4 h-4 text-green-500" /> {feature}
+                  </div>
+                ))
+              ) : (
+                <div className="feature-item text-sm text-gray-500">No feature details available.</div>
+              )}
             </div>
           </div>
 
@@ -178,12 +281,12 @@ export default function ProductPage() {
 
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-gray-600">
-                <span>$120 × 1 day</span>
-                <span>$120.00</span>
+                <span>${formattedPrice} × 1 day</span>
+                <span>${formattedPrice}</span>
               </div>
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span className="text-blue-600">$120.00</span>
+                <span className="text-blue-600">${formattedPrice}</span>
               </div>
             </div>
 
@@ -208,5 +311,13 @@ export default function ProductPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ProductPage() {
+  return (
+    <Suspense fallback={<ProductPageFallback />}>
+      <ProductPageContent />
+    </Suspense>
   );
 }
