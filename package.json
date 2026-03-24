@@ -6,7 +6,7 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev -w frontend\" \"cd backend && py -m uvicorn main:app --reload --port 8000\"",
+    "dev": "concurrently \"npm run dev -w frontend\" \"python backend/main.py\"",
     "build": "npm run build -w frontend",
     "start": "npm run start -w frontend",
     "lint": "npm run lint -w frontend"
@@ -15,7 +15,6 @@
     "concurrently": "^9.2.1"
   },
   "dependencies": {
-    "date-fns": "^4.1.0",
-    "react-date-range": "^2.0.1"
+    "alembic": "^0.0.3"
   }
 }
