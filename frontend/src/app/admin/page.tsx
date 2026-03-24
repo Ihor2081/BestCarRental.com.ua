@@ -34,7 +34,7 @@ export default function AdminPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("adminDashboard");
   const [loading, setLoading] = useState(true);
-
+  
   // Data states
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [fleet, setFleet] = useState<CarType[]>([]);
@@ -72,7 +72,6 @@ export default function AdminPage() {
       }
 
       const headers = { "Authorization": `Bearer ${token}` };
-
       
       const [statsRes, fleetRes, bookingsRes, customersRes, settingsRes, discountsRes, servicesRes] = await Promise.all([
         fetch("/api/admin/dashboard", { headers }),
@@ -83,13 +82,12 @@ export default function AdminPage() {
         fetch("/api/admin/discounts", { headers }),
         fetch("/api/admin/services", { headers })
       ]);
-
+      
       if (statsRes.status === 403 || fleetRes.status === 403) {
         router.push("/");
         return;
       }
 
-      
       const [statsData, fleetData, bookingsData, customersData, settingsData, discountsData, servicesData] = await Promise.all([
         statsRes.json(),
         fleetRes.json(),
@@ -120,20 +118,20 @@ export default function AdminPage() {
 
   const handleDeleteCar = async (id: number) => {
     if (!confirm("Are you sure you want to delete this vehicle?")) return;
-
+    
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`/api/admin/cars/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
-
+      
       if (!response.ok) {
         const data = await response.json();
         alert(data.detail || "Failed to delete car");
         return;
       }
-
+      
       fetchData();
     } catch (error) {
       console.error("Error deleting car:", error);
@@ -182,7 +180,7 @@ export default function AdminPage() {
         },
         body: JSON.stringify(settings)
       });
-
+      
       if (response.ok) {
         alert("Settings updated successfully!");
       }
@@ -395,55 +393,67 @@ export default function AdminPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {filteredFleet.map((car) => (
-              <div key={car.id} className="bg-white rounded-[32px] p-8 flex flex-col sm:flex-row gap-8 shadow-sm border border-gray-100 hover:shadow-xl transition-all group">
-                <div className="w-full sm:w-48 h-32 bg-gray-50 rounded-2xl overflow-hidden">
-                  <img 
-                    src={car.images || "https://picsum.photos/seed/car/800/600"} 
-                    alt={car.model} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                    referrerPolicy="no-referrer" 
-                  />
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h4 className="text-xl font-black tracking-tight">{car.brand} {car.model}</h4>
-                      <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">{car.license_plate}</div>
-                    </div>
-                    <span className={cn(
-                      "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest",
-                      car.status === 'available' ? 'bg-emerald-50 text-emerald-600' :
-                      car.status === 'reserved' ? 'bg-blue-50 text-blue-600' :
-                      car.status === 'in_service' ? 'bg-orange-50 text-orange-600' :
-                      'bg-red-50 text-red-600'
-                    )}>
-                      {car.status.replace('_', ' ')}
-                    </span>
+            {filteredFleet.length > 0 ? (
+              filteredFleet.map((car) => (
+                <div key={car.id} className="bg-white rounded-[32px] p-8 flex flex-col sm:flex-row gap-8 shadow-sm border border-gray-100 hover:shadow-xl transition-all group">
+                  <div className="w-full sm:w-48 h-32 bg-gray-50 rounded-2xl overflow-hidden">
+                    <img 
+                      src={car.images || "https://picsum.photos/seed/car/800/600"} 
+                      alt={car.model} 
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                      referrerPolicy="no-referrer" 
+                    />
                   </div>
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <div className="text-2xl font-black">${car.price_per_day} <span className="text-xs text-gray-400 font-bold">/ day</span></div>
-                      <div className="text-xs text-gray-400 font-bold mt-1">{car.bookings_count} total bookings</div>
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h4 className="text-xl font-black tracking-tight">{car.brand} {car.model}</h4>
+                        <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">{car.license_plate}</div>
+                      </div>
+                      <span className={cn(
+                        "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest",
+                        car.status === 'available' ? 'bg-emerald-50 text-emerald-600' :
+                        car.status === 'reserved' ? 'bg-blue-50 text-blue-600' :
+                        car.status === 'in_service' ? 'bg-orange-50 text-orange-600' :
+                        'bg-red-50 text-red-600'
+                      )}>
+                        {car.status.replace('_', ' ')}
+                      </span>
                     </div>
-                    <div className="flex gap-3">
-                      <button 
-                        onClick={() => { setEditingCar(car); setShowCarModal(true); }}
-                        className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
-                      >
-                        <Pencil className="w-5 h-5" />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteCar(car.id)}
-                        className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                    <div className="flex justify-between items-end">
+                      <div>
+                        <div className="text-2xl font-black">${car.price_per_day} <span className="text-xs text-gray-400 font-bold">/ day</span></div>
+                        <div className="text-xs text-gray-400 font-bold mt-1">{car.bookings_count} total bookings</div>
+                      </div>
+                      <div className="flex gap-3">
+                        <button 
+                          onClick={() => { setEditingCar(car); setShowCarModal(true); }}
+                          className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-all"
+                        >
+                          <Pencil className="w-5 h-5" />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteCar(car.id)}
+                          className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="col-span-full py-20 bg-white rounded-[32px] border-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                  <Car className="w-8 h-8 text-gray-300" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-1">No vehicles found</h3>
+                <p className="text-gray-400 max-w-xs mx-auto">
+                  {fleetSearch ? "No vehicles match your search criteria." : "Your fleet is currently empty. Add your first vehicle to get started."}
+                </p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}
@@ -490,30 +500,44 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredBookings.map((b) => (
-                    <tr key={b.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
-                      <td className="p-6 font-black text-gray-400">#{b.id}</td>
-                      <td className="p-6">
-                        <div className="font-black">{b.customer_name}</div>
-                      </td>
-                      <td className="p-6 font-bold">{b.car_name}</td>
-                      <td className="p-6 text-gray-500 font-medium text-sm">
-                        {new Date(b.start_date).toLocaleDateString()} - {new Date(b.end_date).toLocaleDateString()}
-                      </td>
-                      <td className="p-6 font-black text-lg">${b.total_price}</td>
-                      <td className="p-6">
-                        <span className={cn(
-                          "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest",
-                          b.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
-                          b.status === 'active' ? 'bg-blue-50 text-blue-600' :
-                          b.status === 'cancelled' ? 'bg-red-50 text-red-600' :
-                          'bg-gray-50 text-gray-500'
-                        )}>
-                          {b.status}
-                        </span>
+                  {filteredBookings.length > 0 ? (
+                    filteredBookings.map((b) => (
+                      <tr key={b.id} className="border-b border-gray-50 last:border-0 hover:bg-gray-50/50 transition-colors">
+                        <td className="p-6 font-black text-gray-400">#{b.id}</td>
+                        <td className="p-6">
+                          <div className="font-black">{b.customer_name}</div>
+                        </td>
+                        <td className="p-6 font-bold">{b.car_name}</td>
+                        <td className="p-6 text-gray-500 font-medium text-sm">
+                          {new Date(b.start_date).toLocaleDateString()} - {new Date(b.end_date).toLocaleDateString()}
+                        </td>
+                        <td className="p-6 font-black text-lg">${b.total_price}</td>
+                        <td className="p-6">
+                          <span className={cn(
+                            "px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest",
+                            b.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
+                            b.status === 'active' ? 'bg-blue-50 text-blue-600' :
+                            b.status === 'cancelled' ? 'bg-red-50 text-red-600' :
+                            'bg-gray-50 text-gray-500'
+                          )}>
+                            {b.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="p-20 text-center">
+                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4 mx-auto">
+                          <Calendar className="w-8 h-8 text-gray-300" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-1">No bookings found</h3>
+                        <p className="text-gray-400 max-w-xs mx-auto">
+                          {bookingSearch || bookingStatus ? "No bookings match your filters." : "You haven't received any bookings yet."}
+                        </p>
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -536,40 +560,52 @@ export default function AdminPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredCustomers.map((c) => (
-              <div key={c.id} className="bg-white rounded-[40px] p-10 shadow-sm border border-gray-100 hover:shadow-xl transition-all group">
-                <div className="flex justify-between items-start mb-8">
-                  <div className="w-16 h-16 bg-black rounded-3xl flex items-center justify-center text-white text-2xl font-black">
-                    {c.name.charAt(0)}
+            {filteredCustomers.length > 0 ? (
+              filteredCustomers.map((c) => (
+                <div key={c.id} className="bg-white rounded-[40px] p-10 shadow-sm border border-gray-100 hover:shadow-xl transition-all group">
+                  <div className="flex justify-between items-start mb-8">
+                    <div className="w-16 h-16 bg-black rounded-3xl flex items-center justify-center text-white text-2xl font-black">
+                      {c.name.charAt(0)}
+                    </div>
+                    <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">Client</span>
                   </div>
-                  <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">Client</span>
+                  <h4 className="text-xl font-black mb-1">{c.name}</h4>
+                  <p className="text-sm text-gray-400 font-bold mb-8">{c.email}</p>
+                  
+                  <div className="space-y-3 mb-10">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400 font-bold uppercase tracking-tighter">Bookings</span>
+                      <span className="font-black">{c.bookings_count}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400 font-bold uppercase tracking-tighter">Total Spent</span>
+                      <span className="font-black text-emerald-600">${c.total_spent.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400 font-bold uppercase tracking-tighter">Member Since</span>
+                      <span className="font-black">{new Date(c.member_since).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  
+                  <button 
+                    onClick={() => viewCustomerDetails(c.id)}
+                    className="w-full py-4 border border-gray-100 rounded-2xl font-black hover:bg-black hover:text-white transition-all"
+                  >
+                    View Full Profile
+                  </button>
                 </div>
-                <h4 className="text-xl font-black mb-1">{c.name}</h4>
-                <p className="text-sm text-gray-400 font-bold mb-8">{c.email}</p>
-
-                <div className="space-y-3 mb-10">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400 font-bold uppercase tracking-tighter">Bookings</span>
-                    <span className="font-black">{c.bookings_count}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400 font-bold uppercase tracking-tighter">Total Spent</span>
-                    <span className="font-black text-emerald-600">${c.total_spent.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400 font-bold uppercase tracking-tighter">Member Since</span>
-                    <span className="font-black">{new Date(c.member_since).toLocaleDateString()}</span>
-                  </div>
+              ))
+            ) : (
+              <div className="col-span-full py-20 bg-white rounded-[40px] border-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                  <Users className="w-8 h-8 text-gray-300" />
                 </div>
-
-                <button 
-                  onClick={() => viewCustomerDetails(c.id)}
-                  className="w-full py-4 border border-gray-100 rounded-2xl font-black hover:bg-black hover:text-white transition-all"
-                >
-                  View Full Profile
-                </button>
+                <h3 className="text-xl font-bold text-gray-900 mb-1">No customers found</h3>
+                <p className="text-gray-400 max-w-xs mx-auto">
+                  {customerSearch ? "No customers match your search criteria." : "You don't have any registered customers yet."}
+                </p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}
@@ -595,29 +631,41 @@ export default function AdminPage() {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {discounts.map((discount) => (
-                <div key={discount.id} className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-xl transition-all group">
-                  <div className="flex justify-between items-start mb-6">
-                    <div className="text-4xl font-black text-blue-600">{discount.discount_percent}%</div>
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => { setEditingDiscount(discount); setShowDiscountModal(true); }}
-                        className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 hover:text-blue-600 transition-all"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteDiscount(discount.id)}
-                        className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-600 transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+              {discounts.length > 0 ? (
+                discounts.map((discount) => (
+                  <div key={discount.id} className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-xl transition-all group">
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="text-4xl font-black text-blue-600">{discount.discount_percent}%</div>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => { setEditingDiscount(discount); setShowDiscountModal(true); }}
+                          className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 hover:text-blue-600 transition-all"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteDiscount(discount.id)}
+                          className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-600 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
+                    <div className="text-sm text-gray-400 font-bold uppercase tracking-widest mb-1">Duration Range</div>
+                    <div className="text-lg font-black">{discount.min_days} - {discount.max_days} Days</div>
                   </div>
-                  <div className="text-sm text-gray-400 font-bold uppercase tracking-widest mb-1">Duration Range</div>
-                  <div className="text-lg font-black">{discount.min_days} - {discount.max_days} Days</div>
+                ))
+              ) : (
+                <div className="col-span-full py-16 bg-white rounded-[32px] border-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-center">
+                  <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                    <Percent className="w-6 h-6 text-gray-300" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">No discounts available</h3>
+                  <p className="text-gray-400 max-w-xs mx-auto text-sm">
+                    Create your first discount to encourage longer bookings.
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           </section>
 
@@ -639,38 +687,50 @@ export default function AdminPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {services.map((service) => {
-                const IconComponent = (LucideIcons as any)[service.icon] as LucideIcon;
-                return (
-                  <div key={service.id} className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-xl transition-all group">
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
-                        {IconComponent && <IconComponent className="w-7 h-7" />}
+              {services.length > 0 ? (
+                services.map((service) => {
+                  const IconComponent = (LucideIcons as any)[service.icon] as LucideIcon;
+                  return (
+                    <div key={service.id} className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 hover:shadow-xl transition-all group">
+                      <div className="flex justify-between items-start mb-6">
+                        <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
+                          {IconComponent && <IconComponent className="w-7 h-7" />}
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => { setEditingService(service); setShowServiceModal(true); }}
+                            className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 hover:text-purple-600 transition-all"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteService(service.id)}
+                            className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-600 transition-all"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => { setEditingService(service); setShowServiceModal(true); }}
-                          className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 hover:text-purple-600 transition-all"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteService(service.id)}
-                          className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 hover:text-red-600 transition-all"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <h4 className="text-xl font-black mb-1">{service.name}</h4>
+                      <p className="text-sm text-gray-400 font-medium mb-6 line-clamp-2 h-10">{service.desc}</p>
+                      <div className="flex justify-between items-center pt-6 border-t border-gray-50">
+                        <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Price</span>
+                        <span className="text-2xl font-black text-black">${service.price}</span>
                       </div>
                     </div>
-                    <h4 className="text-xl font-black mb-1">{service.name}</h4>
-                    <p className="text-sm text-gray-400 font-medium mb-6 line-clamp-2 h-10">{service.desc}</p>
-                    <div className="flex justify-between items-center pt-6 border-t border-gray-50">
-                      <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Price</span>
-                      <span className="text-2xl font-black text-black">${service.price}</span>
-                    </div>
+                  );
+                })
+              ) : (
+                <div className="col-span-full py-16 bg-white rounded-[32px] border-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-center">
+                  <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                    <Sparkles className="w-6 h-6 text-gray-300" />
                   </div>
-                );
-              })}
+                  <h3 className="text-lg font-bold text-gray-900 mb-1">No services available</h3>
+                  <p className="text-gray-400 max-w-xs mx-auto text-sm">
+                    Add additional services like insurance or GPS to offer more value.
+                  </p>
+                </div>
+              )}
             </div>
           </section>
         </div>
@@ -686,7 +746,7 @@ export default function AdminPage() {
               </div>
               <h3 className="text-2xl font-black tracking-tight">Business Information</h3>
             </div>
-
+            
             <form onSubmit={handleUpdateSettings} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
@@ -726,7 +786,7 @@ export default function AdminPage() {
                   />
                 </div>
               </div>
-
+              
               <button 
                 type="submit"
                 className="bg-black text-white px-10 py-5 rounded-2xl font-black hover:bg-gray-900 transition-all shadow-lg hover:shadow-black/20 flex items-center gap-3 mt-4"
