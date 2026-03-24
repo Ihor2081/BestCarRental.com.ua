@@ -25,6 +25,7 @@ USE `car_sharing`;
 
 -- --------------------------------------------------------
 
+--
 -- Структура таблиці `additional_services`
 --
 
@@ -56,6 +57,7 @@ CREATE TABLE IF NOT EXISTS `available_discounts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
+
 --
 -- Структура таблиці `cars`
 --
@@ -82,6 +84,7 @@ CREATE TABLE IF NOT EXISTS `cars` (
   UNIQUE KEY `license_plate` (`license_plate`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- --------------------------------------------------------
 
 --
 -- Структура таблиці `deals`
@@ -103,7 +106,6 @@ CREATE TABLE IF NOT EXISTS `deals` (
   KEY `fk_deal_user` (`user_id`),
   KEY `fk_deal_car` (`car_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 
 -- --------------------------------------------------------
 
@@ -127,7 +129,6 @@ CREATE TABLE IF NOT EXISTS `users` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 
 --
 -- Обмеження зовнішнього ключа збережених таблиць
