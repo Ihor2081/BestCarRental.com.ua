@@ -74,7 +74,7 @@ export default function ProfilePage() {
     if (!confirm("Are you sure you want to delete this card?")) return;
 
     try {
-      const response = await fetch(`/api/cards/${cardId}`, {
+      const response = await fetch(`/api/users/cards/${cardId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
