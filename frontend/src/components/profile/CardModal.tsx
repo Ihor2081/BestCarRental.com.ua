@@ -30,7 +30,7 @@ export default function CardModal({ isOpen, onClose, onSuccess }: CardModalProps
     }
 
     try {
-      const response = await fetch("/api/cards", {
+      const response = await fetch("/api/users/cards", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
