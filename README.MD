@@ -5,10 +5,11 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 ## 🚀 Features
 
 - **Dynamic Car Listings**: Browse available vehicles with category and price information.
+**Advanced Filtering & Sorting**: Filter cars by price range, transmission, fuel type, passenger capacity, luggage space, and features. Sort by price, newest, or recommended.
 - **Detailed Product Pages**: View specific car details, specifications, and select additional services.
 - **Admin Dashboard**:
   - **Real-time Analytics**: Monitor monthly revenue, total bookings, and customer engagement.
-  - **Fleet Management**: Full CRUD operations for vehicles with status tracking and image management.
+  - **Fleet Management**: Full CRUD operations for vehicles with status tracking and **physical photo upload** support.
   - **Booking Control**: Centralized view of all rentals with status filtering and search.
   - **Customer Insights**: Detailed profiles with booking history and financial summaries.
   - **Features & Discounts**: Manage rental duration discounts and additional services (insurance, GPS, etc.) with dynamic icons.
@@ -60,14 +61,14 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 - `DELETE /cards/{id}`: Clear saved payment information.
 
 ### Vehicles & Fleet
-- `GET /api/cars`: Retrieve a list of all available cars for rental.
-- `GET /api/cars/{car_id}`: Retrieve one car by ID.
+ `GET /api/cars`: Retrieve a list of all available cars for rental with support for filtering, sorting, and pagination.
 - `GET /api/fleet`: Get detailed fleet information (Admin).
 
 ### Management (Admin)
 - `GET /api/admin/dashboard`: Real-time business analytics and trends.
 - `GET /api/admin/cars`: Full fleet list with booking counts.
 - `POST /api/admin/cars`: Add a new vehicle to the fleet.
+- `POST /api/admin/cars/upload`: Upload a physical photo for a vehicle (saved to `frontend/public/cars`).
 - `PUT /api/admin/cars/{id}`: Update vehicle details or status.
 - `DELETE /api/admin/cars/{id}`: Remove a vehicle (protected against active bookings).
 - `GET /api/admin/bookings`: List all bookings with search and status filters.
@@ -99,8 +100,7 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 │   ├── migrations/           # Directory containing Alembic migration scripts and environment setup.
 │   ├── auth.py               # Contains the authentication logic
 │   ├── users.py              # Manages user profile data, statistics, and payment information. Includes strict validation for card numbers and expiration dates.
-│   ├── admin.py              # Modular router for all administrative functions and dashboard analytics.
-│   ├── cars.py               # Modular router for public car list/detail endpoints.
+│   └── admin.py              # Modular router for all administrative functions and dashboard analytics.
 │   ├── database.py           # Async SQLAlchemy engine & session setup
 │   ├── models.py             # Database models
 │   ├── email_service.py      #  Handles sending transactional emails for verification and password resets.
