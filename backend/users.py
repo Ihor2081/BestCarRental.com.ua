@@ -10,7 +10,7 @@ from database import get_db
 from models import User, Deal, DealStatusEnum
 from auth import get_current_user
 
-router = APIRouter(prefix="/api", tags=["users"])
+router = APIRouter(tags=["users"])
 
 # --- Pydantic Schemas ---
 
@@ -59,7 +59,7 @@ class UserMeResponse(BaseModel):
 
 # --- Endpoints ---
 
-@router.get("/users/me", response_model=UserMeResponse)
+@router.get("/me", response_model=UserMeResponse)
 async def get_me(db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
     # Prepare card info
     cards = []
@@ -133,7 +133,7 @@ async def get_me(db: AsyncSession = Depends(get_db), user: User = Depends(get_cu
         "booking_history": bookings
     }
 
-@router.put("/users/me", response_model=UserUpdate)
+@router.put("/me", response_model=UserUpdate)
 async def update_me(data: UserUpdate, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
     if data.name is not None:
         user.name = data.name
@@ -197,7 +197,7 @@ async def add_card(data: CardCreate, db: AsyncSession = Depends(get_db), user: U
     import re
     if not re.match(r"^\d{16}$", data.card_number):
         raise HTTPException(status_code=400, detail="Card number must be exactly 16 digits and contain only numbers")
-            
+        
     user.card_number = data.card_number
     try:
         month, year = data.expires.split('/')
@@ -225,7 +225,7 @@ async def add_card(data: CardCreate, db: AsyncSession = Depends(get_db), user: U
         "expires": data.expires
     }
 
-@router.post("/users/change-password")
+@router.post("/change-password")
 async def change_password(data: PasswordChange, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
     from auth import verify_password, get_password_hash
     
