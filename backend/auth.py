@@ -27,7 +27,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 1 day
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
-router = APIRouter(prefix="/api/auth", tags=["auth"])
+router = APIRouter(tags=["auth"])
 
 # --- Pydantic Schemas ---
 

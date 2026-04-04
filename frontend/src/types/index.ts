@@ -3,18 +3,26 @@ export interface Car {
   brand: string;
   model: string;
   year: number;
+  category?: string;
   license_plate: string;
   color?: string;
   passengers: number;
   luggage: number;
   transmission: 'automatic' | 'mechanic';
   fuel_type: 'gasoline' | 'gas' | 'electricity';
-  features?: string;
+  features?: string[];
   description?: string;
   images?: string;
+  image?: string;
   price_per_day: number;
   status: 'available' | 'reserved' | 'in_service' | 'inactive';
   bookings_count: number;
+}
+
+export interface PaginatedCars {
+  items: Car[];
+  total_pages: number;
+  total_items: number;
 }
 
 export interface Booking {
