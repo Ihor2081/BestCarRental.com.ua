@@ -3,8 +3,10 @@ from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import declarative_base
 
-# Load environment variables strictly from .env.example file
-env_path = os.path.join(os.path.dirname(__file__), '.env.example')
+# Load environment variables
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+if not os.path.exists(env_path):
+    env_path = os.path.join(os.path.dirname(__file__), '.env.example')
 load_dotenv(dotenv_path=env_path)
 
 # Build the connection string from environment variables
@@ -16,7 +18,7 @@ DB_PORT = os.getenv("DB_PORT")
 DB_NAME = os.getenv("DB_NAME")
 
 if not all([DB_USER, DB_HOST, DB_PORT, DB_NAME]):
-    raise ValueError("Missing required database configuration in .env.example")
+    raise ValueError(f"Missing required database configuration in {env_path}")
 
 SQLALCHEMY_DATABASE_URL = f"mysql+aiomysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 

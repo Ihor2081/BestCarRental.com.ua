@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func, and_, or_, desc, String
@@ -8,12 +8,15 @@ from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 from datetime import datetime, timedelta
 import decimal
+import os
+import shutil
+import uuid
 
 from database import get_db
 from models import User, Car, Deal, RoleEnum, DealStatusEnum, CarStatusEnum, TransmissionEnum, FuelTypeEnum, AvailableDiscount, AdditionalService
 from auth import get_admin_user, get_password_hash, verify_password
 
-router = APIRouter(prefix="/api/admin", tags=["admin"])
+router = APIRouter(tags=["admin"])
 
 # --- Pydantic Schemas ---
 
@@ -36,6 +39,7 @@ class CarBase(BaseModel):
     luggage: int = 2
     transmission: TransmissionEnum
     fuel_type: FuelTypeEnum
+    category: Optional[str] = None
     features: Optional[str] = None
     description: Optional[str] = None
     images: Optional[str] = None
@@ -291,6 +295,26 @@ async def delete_car(car_id: int, db: AsyncSession = Depends(get_db), admin: Use
     await db.delete(car)
     await db.commit()
     return {"status": "success", "message": "Car deleted successfully"}
+
+@router.post("/cars/upload")
+async def upload_car_photo(file: UploadFile = File(...), admin: User = Depends(get_admin_user)):
+    # Ensure the upload directory exists
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    upload_dir = os.path.join(base_dir, "frontend", "public", "cars")
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir, exist_ok=True)
+    
+    # Generate a unique filename
+    file_extension = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = os.path.join(upload_dir, unique_filename)
+    
+    # Save the file
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    
+    # Return the public URL
+    return {"url": f"/cars/{unique_filename}"}
 
 # --- Bookings Endpoints ---
 

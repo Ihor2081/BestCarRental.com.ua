@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { X, Mail, Lock, User, Phone, FileText, MapPin, Eye, EyeOff } from "lucide-react";
+import ForgotPasswordModal from "./ForgotPasswordModal";
+import ResetPasswordModal from "./ResetPasswordModal";
+import VerifyEmailModal from "./VerifyEmailModal";
 
 interface AuthModalProps {
   onClose: () => void;
@@ -13,6 +16,11 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showVerifyEmail, setShowVerifyEmail] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [verifyEmail, setVerifyEmail] = useState("");
 
   // Form states
   const [formData, setFormData] = useState({
@@ -74,14 +82,17 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
         localStorage.setItem("user", JSON.stringify(data.user));
         onSuccess();
       } else {
-        // Registration success -> switch to login
-        setIsLogin(true);
-        setError("Registration successful! Please log in.");
-        // Clear sensitive fields
-        setFormData({ ...formData, password: "", confirmPassword: "" });
+        // Registration success -> show verification modal
+        setVerifyEmail(formData.email);
+        setShowVerifyEmail(true);
       }
     } catch (err: any) {
-      setError(err.message);
+      if (err.message.includes("Email not verified")) {
+        setVerifyEmail(formData.email);
+        setShowVerifyEmail(true);
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -162,6 +173,18 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
               </button>
             </div>
 
+            {isLogin && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  className="text-sm text-gray-500 hover:text-black font-medium transition-colors"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+            )}
+
             {!isLogin && (
               <>
                 <div className="relative">
@@ -237,6 +260,40 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
           </div>
         </div>
       </div>
+
+      {showForgotPassword && (
+        <ForgotPasswordModal 
+          onClose={() => setShowForgotPassword(false)}
+          onCodeSent={(email) => {
+            setResetEmail(email);
+            setShowForgotPassword(false);
+            setShowResetPassword(true);
+          }}
+        />
+      )}
+
+      {showResetPassword && (
+        <ResetPasswordModal 
+          email={resetEmail}
+          onClose={() => setShowResetPassword(false)}
+          onSuccess={() => {
+            setShowResetPassword(false);
+            setError("Password updated successfully! Please log in.");
+          }}
+        />
+      )}
+
+      {showVerifyEmail && (
+        <VerifyEmailModal 
+          email={verifyEmail}
+          onClose={() => setShowVerifyEmail(false)}
+          onSuccess={() => {
+            setShowVerifyEmail(false);
+            setIsLogin(true);
+            setError("Email verified successfully! Please log in.");
+          }}
+        />
+      )}
     </div>
   );
 }

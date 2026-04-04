@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X, Save, Trash2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { X, Save, Trash2, Camera, Loader2 } from "lucide-react";
 import { Car } from "@/types";
 
 interface CarModalProps {
@@ -12,11 +12,14 @@ interface CarModalProps {
 
 export default function CarModal({ car, onClose, onSave }: CarModalProps) {
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
-  const [formData, setFormData] = useState<Partial<Car>>({
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [formData, setFormData] = useState<any>({
     brand: "",
     model: "",
     year: new Date().getFullYear(),
+    category: "Standard",
     license_plate: "",
     color: "",
     passengers: 5,
@@ -32,7 +35,23 @@ export default function CarModal({ car, onClose, onSave }: CarModalProps) {
 
   useEffect(() => {
     if (car) {
-      setFormData(car);
+      setFormData({
+        brand: car.brand || "",
+        model: car.model || "",
+        year: car.year || new Date().getFullYear(),
+        category: car.category || "Standard",
+        license_plate: car.license_plate || "",
+        color: car.color || "",
+        passengers: car.passengers || 5,
+        luggage: car.luggage || 2,
+        transmission: car.transmission || "automatic",
+        fuel_type: car.fuel_type || "gasoline",
+        features: Array.isArray(car.features) ? car.features.join(", ") : car.features || "",
+        description: car.description || "",
+        images: car.images || car.image || "",
+        price_per_day: car.price_per_day || 0,
+        status: car.status || "available"
+      });
     }
   }, [car]);
 
@@ -42,6 +61,40 @@ export default function CarModal({ car, onClose, onSave }: CarModalProps) {
       ...formData,
       [name]: type === "number" ? (value === "" ? NaN : parseFloat(value)) : value
     });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setError("");
+
+    try {
+      const token = localStorage.getItem("token");
+      const formDataUpload = new FormData();
+      formDataUpload.append("file", file);
+
+      const response = await fetch("/api/admin/cars/upload", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+        body: formDataUpload
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.detail || "Failed to upload photo");
+      }
+
+      const { url } = await response.json();
+      setFormData((prev: any) => ({ ...prev, images: url }));
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,6 +148,59 @@ export default function CarModal({ car, onClose, onSave }: CarModalProps) {
             </div>
           )}
 
+          <div className="space-y-4">
+            <label className="text-sm font-bold text-gray-700">Vehicle Photo</label>
+            <div className="flex flex-col gap-4">
+              {formData.images && (
+                <div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-gray-100 border border-gray-100">
+                  <img src={formData.images} alt="Car preview" className="w-full h-full object-cover" />
+                  <button 
+                    type="button" 
+                    onClick={() => setFormData({ ...formData, images: "" })}
+                    className="absolute top-4 right-4 p-2 bg-white/80 backdrop-blur-md rounded-full hover:bg-white transition-all shadow-lg"
+                  >
+                    <Trash2 className="w-5 h-5 text-red-500" />
+                  </button>
+                </div>
+              )}
+              
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex-1 flex items-center justify-center gap-2 py-4 border-2 border-dashed border-gray-200 rounded-2xl font-bold hover:border-black hover:bg-gray-50 transition-all disabled:opacity-50"
+                >
+                  {uploading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Camera className="w-5 h-5" />
+                  )}
+                  {uploading ? "Uploading..." : "Upload Physical Photo"}
+                </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  accept="image/*" 
+                  className="hidden" 
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Or provide Image URL</label>
+                <input 
+                  type="text" 
+                  name="images" 
+                  value={formData.images} 
+                  onChange={handleChange} 
+                  placeholder="https://..." 
+                  className="w-full px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-black/5" 
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">Brand</label>
@@ -115,6 +221,17 @@ export default function CarModal({ car, onClose, onSave }: CarModalProps) {
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">Color</label>
               <input type="text" name="color" value={formData.color} onChange={handleChange} className="w-full px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-black/5" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-gray-700">Category</label>
+              <select name="category" value={formData.category} onChange={handleChange} className="w-full px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-black/5">
+                <option value="Sedan">Sedan</option>
+                <option value="SUV">SUV</option>
+                <option value="Sports">Sports</option>
+                <option value="Electric">Electric</option>
+                <option value="Compact">Compact</option>
+                <option value="Standard">Standard</option>
+              </select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">Price Per Day ($)</label>
@@ -152,11 +269,6 @@ export default function CarModal({ car, onClose, onSave }: CarModalProps) {
                 <option value="inactive">Inactive</option>
               </select>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-gray-700">Image URL</label>
-            <input type="text" name="images" value={formData.images} onChange={handleChange} placeholder="https://..." className="w-full px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-black/5" />
           </div>
 
           <div className="space-y-2">

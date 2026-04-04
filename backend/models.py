@@ -67,6 +67,7 @@ class Car(Base):
     luggage = Column(Integer, default=2)
     transmission = Column(Enum(TransmissionEnum), nullable=False)
     fuel_type = Column(Enum(FuelTypeEnum), nullable=False)
+    category = Column(String(50), nullable=True)
     features = Column(Text, nullable=True)
     description = Column(Text, nullable=True)
     images = Column(Text, nullable=True)
