@@ -74,7 +74,7 @@ export default function ProfilePage() {
     if (!confirm("Are you sure you want to delete this card?")) return;
 
     try {
-      const response = await fetch(`/api/cards/${cardId}`, {
+      const response = await fetch(`/api/users/cards/${cardId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -198,10 +198,10 @@ export default function ProfilePage() {
                 {[
                   { label: "Total Bookings", value: user?.stats.total_deals || 0, color: "blue" },
                   { label: "Active Rentals", value: user?.stats.active_deals || 0, color: "emerald" },
-                  { label: "Reward Points", value: user?.stats.reward_points.toLocaleString() || 0, color: "purple" },
+                  { label: "Reward Points", value: (user?.stats?.reward_points || 0).toLocaleString(), color: "purple" },
                 ].map((stat, i) => (
-                  <div key={i} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-                    <div className="text-3xl font-black mb-1">{stat.value}</div>
+                  <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div className="text-2xl font-bold mb-1">{stat.value}</div>
                     <div className="text-sm text-gray-500 font-semibold">{stat.label}</div>
                   </div>
                 ))}
@@ -230,7 +230,7 @@ export default function ProfilePage() {
                       </div>
                       <div className="flex items-center gap-8">
                         <div className="text-right">
-                          <div className="text-xl font-black">{b.price}</div>
+                          <div className="text-lg font-bold">{b.price}</div>
                           <span className={cn("status-badge", b.status)}>{b.status}</span>
                         </div>
                       </div>
@@ -255,7 +255,7 @@ export default function ProfilePage() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {user?.cards.map((card) => (
-                  <div key={card.id} className="bg-gradient-to-br from-gray-900 to-black p-8 rounded-[32px] text-white shadow-xl relative overflow-hidden group">
+                  <div key={card.id} className="bg-gradient-to-br from-gray-900 to-black p-8 rounded-3xl text-white shadow-xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-150 duration-700"></div>
                     <div className="relative z-10">
                       <div className="flex justify-between items-start mb-12">
@@ -286,7 +286,7 @@ export default function ProfilePage() {
 
                 <button 
                   onClick={() => setShowCardModal(true)}
-                  className="border-2 border-dashed border-gray-200 rounded-[32px] flex flex-col items-center justify-center gap-4 hover:border-black hover:bg-gray-50 transition-all group min-h-[220px]"
+                  className="border-2 border-dashed border-gray-200 rounded-3xl flex flex-col items-center justify-center gap-4 hover:border-black hover:bg-gray-50 transition-all group min-h-[220px]"
                 >
                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-black group-hover:text-white transition-all">
                     <Plus className="w-6 h-6" />
