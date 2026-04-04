@@ -5,7 +5,7 @@ from sqlalchemy.future import select
 from database import get_db
 from models import Car
 
-router = APIRouter(prefix="/api", tags=["cars"])
+router = APIRouter(tags=["cars"])
 
 
 def serialize_car(car: Car) -> dict:

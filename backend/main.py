@@ -12,6 +12,8 @@ from auth import router as auth_router
 from admin import router as admin_router
 from users import router as users_router
 from catalog import router as catalog_router
+from services import router as services_router
+from cars import router as cars_router
 
 load_dotenv()
 
@@ -31,6 +33,8 @@ app.include_router(catalog_router, prefix="/api/catalog")
 app.include_router(auth_router, prefix="/api/auth")
 app.include_router(admin_router, prefix="/api/admin")
 app.include_router(users_router, prefix="/api/users")
+app.include_router(services_router, prefix="/api")
+app.include_router(cars_router, prefix="/api")
 
 @app.get("/api/debug")
 async def debug_info():

@@ -20,7 +20,7 @@ class ServiceResponse(ServiceBase):
     id: int
 
 
-router = APIRouter(prefix="/api", tags=["services"])
+router = APIRouter(tags=["services"])
 
 
 @router.get("/services", response_model=List[ServiceResponse])
@@ -29,10 +29,10 @@ async def get_services(db: AsyncSession = Depends(get_db)):
         result = await db.execute(
             select(AdditionalService).order_by(AdditionalService.name)
         )
-        cars = result.scalars().all()
-        return cars
+        services = result.scalars().all()
+        return services
     except Exception as e:
-        print(f"Error fetching cars: {e}")
+        print(f"Error fetching services: {e}")
         raise HTTPException(
             status_code=500, detail="Error fetching services from database"
         )
