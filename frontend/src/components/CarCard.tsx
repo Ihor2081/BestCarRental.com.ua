@@ -10,11 +10,14 @@ export default function CarCard({ car }: { car: Car }) {
     <div className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all group border border-gray-100">
       <div className="relative h-52 overflow-hidden">
         <img 
-          src={car.images || "https://picsum.photos/seed/car/800/600"} 
+          src={car.image || car.images || "https://picsum.photos/seed/car/800/600"} 
           alt={`${car.brand} ${car.model}`} 
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           referrerPolicy="no-referrer"
         />
+        <div className="absolute top-4 left-4 bg-black/80 backdrop-blur px-3 py-1 rounded-full text-[10px] text-white font-bold shadow-sm uppercase tracking-wider">
+          {car.category || "Standard"}
+        </div>
         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold shadow-sm capitalize">
           {car.fuel_type}
         </div>
