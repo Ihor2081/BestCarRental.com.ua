@@ -6,12 +6,17 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev -w frontend\" \"python backend/main.py\"",
+    "dev": "concurrently \"npm run dev -w frontend\" \"cd backend && python -m app.main\"",
     "build": "npm run build -w frontend",
     "start": "npm run start -w frontend",
     "lint": "npm run lint -w frontend"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+
+    "sonner": "^2.0.7",
+    "zustand": "^5.0.12"
   }
 }
