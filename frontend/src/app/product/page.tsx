@@ -8,7 +8,8 @@ import {
   Check, Shield, Navigation, Baby, Wifi, MapPin,
   Calendar, Clock
 } from "lucide-react";
-import type { Car, AdditionalService } from "@/types";
+import type { AdditionalService } from "@/types";
+import type { Car } from "@/features/cars/types";
 
 function ProductPageFallback() {
   return (
@@ -113,15 +114,9 @@ function ProductPageContent() {
   }, [car]);
 
   const capitalizeText = (text: string) => {
+    if (!text) return "";
     return text.charAt(0).toUpperCase() + text.slice(1);
   };
-
-  const heroImage = useMemo(() => {
-    const raw = car?.images?.trim();
-    if (!raw) return "https://placehold.co/600x400";
-    if (raw.includes(",")) return raw.split(",")[0].trim();
-    return raw;
-  }, [car]);
 
   if (loading) {
     return (
@@ -144,7 +139,7 @@ function ProductPageContent() {
     );
   }
 
-  const carTitle = `${car.brand} ${car.model}`;
+  const carTitle = `${car.make} ${car.model}`;
   const formattedPrice = Number(car.price_per_day).toFixed(2);
 
   return (
@@ -162,7 +157,7 @@ function ProductPageContent() {
           {/* MAIN IMAGE */}
           <div className="car-hero-image mb-8">
             <img
-              src={heroImage}
+              src={car.image_url || `https://picsum.photos/seed/${car.id}/800/600`}
               alt={carTitle}
               className="rounded-2xl w-full shadow-lg"
               referrerPolicy="no-referrer"
@@ -172,7 +167,9 @@ function ProductPageContent() {
           {/* CAR INFO HEADER */}
           <div className="flex flex-col sm:flex-row justify-between items-start mb-8 gap-4">
             <div>
-              <span className="bg-gray-800 text-white px-3 py-1 rounded-md text-xs font-semibold">{car.status}</span>
+              <span className="bg-gray-800 text-white px-3 py-1 rounded-md text-xs font-semibold">
+                {car.is_available ? "Available" : "Rented"}
+              </span>
               <h1 className="text-4xl font-bold mt-2">{carTitle}</h1>
               <div className="flex items-center gap-2 mt-2 text-yellow-500">
                 <div className="flex">
