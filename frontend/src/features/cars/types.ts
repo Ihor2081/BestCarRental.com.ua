@@ -26,5 +26,9 @@ export interface CarFilters {
   transmission?: string;
   fuel_type?: string;
   passengers?: string;
+  luggage?: string;
+  features?: string;
   search?: string;
+  sort?: string;
 }
+
