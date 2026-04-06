@@ -7,20 +7,12 @@ interface SortProps {
 
 export default function Sort({ onSortChange, currentSort }: SortProps) {
   return (
-    <select 
-<<<<<<< HEAD
+    <select
       className="bg-transparent border-none font-black text-gray-900 outline-none cursor-pointer text-sm"
       value={currentSort}
       onChange={(e) => onSortChange(e.target.value)}
     >
-      <option value="recommended">Recommended</option>
-=======
-      className="bg-transparent border-none font-semibold outline-none cursor-pointer"
-      value={currentSort}
-      onChange={(e) => onSortChange(e.target.value)}
-    >
       <option value="recommended">Sort by: Recommended</option>
->>>>>>> main
       <option value="price_low">Price: Low to High</option>
       <option value="price_high">Price: High to Low</option>
     </select>
