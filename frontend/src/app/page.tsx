@@ -8,8 +8,7 @@ import { Button } from "@/shared/ui/Button";
 import { Search, MapPin, Calendar } from "lucide-react";
 
 export default function Home() {
-  const { cars, loading, filters, updateFilters } = useCars();
-  const [sort, setSort] = useState("recommended");
+  const { cars, loading, filters, updateFilters } = useCars({ sort: "recommended" });
   
   const [location, setLocation] = useState("");
   const [pickupDate, setPickupDate] = useState("");
@@ -23,11 +22,17 @@ export default function Home() {
       fuel_type: newFilters.fuel_type.join(","),
       passengers: newFilters.passengers.join(","),
       category: newFilters.category.join(","),
+      luggage: newFilters.luggage.join(","),
+      features: newFilters.features.join(","),
     });
   };
 
   const handleSearch = () => {
     updateFilters({ search: location });
+  };
+
+  const handleSortChange = (newSort: string) => {
+    updateFilters({ sort: newSort });
   };
 
   return (
@@ -122,7 +127,7 @@ export default function Home() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-bold text-gray-500">Sort by:</span>
-                <Sort onSortChange={setSort} currentSort={sort} />
+                <Sort onSortChange={handleSortChange} currentSort={filters.sort || "recommended"} />
               </div>
             </div>
 
