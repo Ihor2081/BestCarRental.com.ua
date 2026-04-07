@@ -1,9 +1,9 @@
 
 import { apiClient } from "../../../shared/api/client";
-import { Car, CarFilters } from "../types";
+import { Car, CarFilters, CarsResponse } from "../types";
 
 export const carService = {
-  getCars: async (filters: CarFilters = {}): Promise<Car[]> => {
+  getCars: async (filters: CarFilters = {}): Promise<CarsResponse> => {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== "") {
@@ -14,8 +14,7 @@ export const carService = {
     const query = params.toString();
     const endpoint = `/api/catalog${query ? `?${query}` : ""}`;
     
-    const response = await apiClient<{ items: Car[] }>(endpoint);
-    return response.items;
+    return apiClient<CarsResponse>(endpoint);
   },
 
   getCarById: async (id: number): Promise<Car> => {
