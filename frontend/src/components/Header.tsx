@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, Car } from "lucide-react";
 import AuthModal from "./AuthModal";
 
 export default function Header() {
@@ -56,8 +56,8 @@ export default function Header() {
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
       <div className="container mx-auto px-4 h-20 flex items-center justify-between max-w-7xl">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
-            <div className="w-5 h-5 border-2 border-white rounded-full border-t-transparent animate-spin-slow"></div>
+          <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
+            <Car className="text-white w-6 h-6" />
           </div>
           <span className="text-2xl font-black tracking-tighter">DRIVEAWAY</span>
         </Link>

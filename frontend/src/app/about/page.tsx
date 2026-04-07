@@ -39,7 +39,7 @@ export default function AboutPage() {
           {/* IMAGE */}
           <div className="relative w-full h-[400px] lg:h-[500px]">
             <Image
-              src="/images/our-team.jpg"
+              src="/static/about/our-team.jpg"
               alt="DriveAway Team"
               fill
               className="rounded-2xl shadow-xl object-cover"
