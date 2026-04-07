@@ -5,14 +5,20 @@ import { useCars, CarCard } from "@/features/cars";
 import Filter, { FiltersState } from "@/components/catalog/Filter";
 import Sort from "@/components/catalog/Sort";
 import { Button } from "@/shared/ui/Button";
+import { Pagination } from "@/shared/ui/Pagination";
 import { Search, MapPin, Calendar } from "lucide-react";
 
 export default function Home() {
-  const { cars, loading, filters, updateFilters } = useCars({ sort: "recommended" });
+  const { cars, totalPages, totalItems, loading, filters, updateFilters, setPage, resetFilters, loadMore } = useCars({ 
+    sort: "recommended",
+    page: 1,
+    page_size: 6
+  });
   
   const [location, setLocation] = useState("");
   const [pickupDate, setPickupDate] = useState("");
   const [returnDate, setReturnDate] = useState("");
+  const [filterKey, setFilterKey] = useState(0);
 
   const handleFilterChange = (newFilters: FiltersState) => {
     updateFilters({
@@ -33,6 +39,14 @@ export default function Home() {
 
   const handleSortChange = (newSort: string) => {
     updateFilters({ sort: newSort });
+  };
+
+  const handleClearFilters = () => {
+    resetFilters();
+    setLocation("");
+    setPickupDate("");
+    setReturnDate("");
+    setFilterKey(prev => prev + 1);
   };
 
   return (
@@ -111,9 +125,22 @@ export default function Home() {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* SIDEBAR FILTERS */}
           <aside className="lg:w-64 flex-shrink-0">
-            <div className="bg-white p-6 rounded-[32px] border border-gray-100 sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-hide">
-              <h2 className="text-xl font-black mb-8 text-gray-900">Filters</h2>
-              <Filter onFilterChange={handleFilterChange} />
+            <div className="bg-white p-6 rounded-[32px] border border-gray-100 sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto scrollbar-hide flex flex-col">
+              <h2 className="text-xl font-black text-gray-900 mb-8">Filters</h2>
+              
+              <div className="flex-1">
+                <Filter key={filterKey} onFilterChange={handleFilterChange} />
+              </div>
+
+              <div className="mt-8 pt-8 border-t border-gray-50 flex justify-center">
+                <Button 
+                  variant="ghost" 
+                  onClick={handleClearFilters}
+                  className="text-gray-400 hover:text-black font-black text-sm"
+                >
+                  Clear all filters
+                </Button>
+              </div>
             </div>
           </aside>
 
@@ -122,7 +149,7 @@ export default function Home() {
             <div className="flex justify-between items-center mb-12">
               <div>
                 <h2 className="text-3xl font-black text-gray-900">
-                  {loading ? "Loading..." : `${cars.length} Vehicles Available`}
+                  {loading && cars.length === 0 ? "Loading..." : `${totalItems} Vehicles Available`}
                 </h2>
               </div>
               <div className="flex items-center gap-2">
@@ -131,26 +158,49 @@ export default function Home() {
               </div>
             </div>
 
-            {loading ? (
+            {loading && cars.length === 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                    <div key={i} className="h-80 bg-gray-200 rounded-xl animate-pulse" />
                 ))}
               </div>
             ) : cars.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {cars.map((car) => (
-                  <CarCard key={car.id} car={car} />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {cars.map((car) => (
+                    <CarCard key={car.id} car={car} />
+                  ))}
+                </div>
+                
+                <div className="flex flex-col items-center gap-8 mt-12">
+                  {(filters.page || 1) < totalPages && (
+                    <Button 
+                      variant="secondary" 
+                      onClick={loadMore}
+                      loading={loading}
+                      className="px-12 py-4 rounded-2xl font-black"
+                    >
+                      Show More
+                    </Button>
+                  )}
+                  
+                  <Pagination 
+                    currentPage={filters.page || 1}
+                    totalPages={totalPages}
+                    onPageChange={setPage}
+                  />
+                </div>
+              </>
             ) : (
-              <div className="bg-white py-20 rounded-xl border border-gray-200 text-center">
-                <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <div className="bg-white py-20 rounded-xl border border-gray-200 flex flex-col items-center justify-center text-center">
+                <Search className="w-12 h-12 text-gray-300 mb-4" />
                 <h3 className="text-xl font-bold text-gray-900 mb-2">No cars found</h3>
                 <p className="text-gray-500 mb-8">Try adjusting your filters to find what you're looking for.</p>
-                <Button variant="outline" onClick={() => updateFilters({})}>
-                  Clear all filters
-                </Button>
+                <div className="flex justify-center w-full">
+                  <Button variant="outline" onClick={handleClearFilters} className="mx-auto">
+                    Clear all filters
+                  </Button>
+                </div>
               </div>
             )}
           </div>
