@@ -6,7 +6,7 @@ import { cn } from "../utils/cn";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "icon";
   loading?: boolean;
   children: ReactNode;
 }
@@ -32,6 +32,7 @@ export function Button({
     sm: "px-4 py-2 text-sm",
     md: "px-6 py-3",
     lg: "px-8 py-4 text-lg",
+    icon: "w-10 h-10 p-0",
   };
 
   return (
