@@ -102,6 +102,18 @@ npm run dev
 - **Backend API**: [http://localhost:8000](http://localhost:8000)
 - **API Documentation (Swagger)**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
+<<<<<<< Setup-Unit-Testing-Environment-#ID-15
+### 6. Running Tests
+
+The backend includes a suite of unit tests for services and schemas. To run them:
+
+```bash
+cd backend
+pytest
+```
+
+For more details, see the [Backend Testing README](backend/tests/README.md).
+
 ### 🔍 Health Checks
 
 You can verify the status of the application and database using these endpoints:
@@ -111,6 +123,17 @@ You can verify the status of the application and database using these endpoints:
 
 ---
 
+=======
+### 🔍 Health Checks
+
+You can verify the status of the application and database using these endpoints:
+
+- **Backend Health**: [http://localhost:8000/api/health](http://localhost:8000/api/health)
+- **Database Health**: [http://localhost:8000/db-status](http://localhost:8000/db-status)
+
+---
+
+>>>>>>> main
 ## 📂 Project Structure
 
 The project follows a monorepo architecture with a clear separation of concerns:
@@ -119,6 +142,13 @@ backend/
 │
 ├── alembic.ini
 ├── requirements.txt
+<<<<<<< Setup-Unit-Testing-Environment-#ID-15
+├──tests/
+│   ├── conftest.py          # Global fixtures and configuration
+│   ├── test_schemas/        # Unit tests for Pydantic schemas
+│   └── test_services/       # Unit tests for business logic (Service Layer)
+=======
+>>>>>>> main
 ├── migrations/ # Alembic database migration scripts.
 │   ├── versions/
 │   │   ├── .keep

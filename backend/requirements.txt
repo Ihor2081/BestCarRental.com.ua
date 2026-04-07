@@ -12,3 +12,7 @@ pydantic[email]
 python-multipart
 alembic
 pydantic-settings
+pytest
+pytest-asyncio
+pytest-mock
+httpx
