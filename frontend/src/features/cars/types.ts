@@ -30,5 +30,12 @@ export interface CarFilters {
   features?: string;
   search?: string;
   sort?: string;
+  page?: number;
+  page_size?: number;
 }
 
+export interface CarsResponse {
+  items: Car[];
+  total_pages: number;
+  total_items: number;
+}
