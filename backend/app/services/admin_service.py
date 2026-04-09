@@ -2,7 +2,7 @@ import os
 import shutil
 import uuid
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, and_, or_, desc, select
@@ -32,7 +32,7 @@ class AdminService:
         self.db = db
 
     async def get_dashboard_stats(self):
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
         
         # Monthly Revenue
         revenue_result = await self.db.execute(
@@ -83,7 +83,7 @@ class AdminService:
         revenue_trend = []
         bookings_trend = []
         for i in range(6, -1, -1):
-            day = (datetime.utcnow() - timedelta(days=i)).date()
+            day = (datetime.now(timezone.utc) - timedelta(days=i)).date()
             next_day = day + timedelta(days=1)
             
             day_rev = await self.db.execute(
@@ -160,7 +160,7 @@ class AdminService:
         if existing:
             raise HTTPException(status_code=400, detail=f"Car with license plate '{car_data.license_plate}' already exists.")
         
-        car = await self.car_repo.create(car_data.dict())
+        car = await self.car_repo.create(car_data.model_dump())
         return {
             "id": car.id,
             "make": car.brand,
@@ -193,7 +193,7 @@ class AdminService:
             if existing:
                 raise HTTPException(status_code=400, detail=f"Car with license plate '{car_data.license_plate}' already exists.")
         
-        updated_car = await self.car_repo.update(car, car_data.dict(exclude_unset=True))
+        updated_car = await self.car_repo.update(car, car_data.model_dump(exclude_unset=True))
         bookings_count = await self.db.execute(
             select(func.count(Deal.id)).where(Deal.car_id == updated_car.id)
         )
@@ -354,13 +354,17 @@ class AdminService:
         return await self.discount_repo.get_all_ordered()
 
     async def create_discount(self, data: DiscountCreate):
-        return await self.discount_repo.create(data.dict())
+        if data.min_days >= data.max_days:
+            raise HTTPException(status_code=400, detail="min_days must be less than max_days")
+        return await self.discount_repo.create(data.model_dump())
 
     async def update_discount(self, discount_id: int, data: DiscountCreate):
+        if data.min_days >= data.max_days:
+            raise HTTPException(status_code=400, detail="min_days must be less than max_days")
         discount = await self.discount_repo.get(discount_id)
         if not discount:
             raise HTTPException(status_code=404, detail="Discount not found")
-        return await self.discount_repo.update(discount, data.dict())
+        return await self.discount_repo.update(discount, data.model_dump())
 
     async def delete_discount(self, discount_id: int):
         return await self.discount_repo.remove(discount_id)
@@ -369,13 +373,13 @@ class AdminService:
         return await self.service_repo.get_all_ordered()
 
     async def create_service(self, data: ServiceCreate):
-        return await self.service_repo.create(data.dict())
+        return await self.service_repo.create(data.model_dump())
 
     async def update_service(self, service_id: int, data: ServiceCreate):
         service = await self.service_repo.get(service_id)
         if not service:
             raise HTTPException(status_code=404, detail="Service not found")
-        return await self.service_repo.update(service, data.dict())
+        return await self.service_repo.update(service, data.model_dump())
 
     async def delete_service(self, service_id: int):
         return await self.service_repo.remove(service_id)
