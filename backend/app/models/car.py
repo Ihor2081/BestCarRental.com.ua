@@ -38,7 +38,7 @@ class Car(Base):
     images = Column(Text, nullable=True)
     price_per_day = Column(Numeric(10, 2), nullable=False)
     status = Column(Enum(CarStatusEnum), default=CarStatusEnum.available)
-    created_at = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
-    updated_at = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.current_timestamp(), nullable=False)
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
 
     deals = relationship("Deal", back_populates="car")
