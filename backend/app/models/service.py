@@ -10,5 +10,5 @@ class AdditionalService(Base):
     name = Column(String(100), nullable=False)
     desc = Column(Text, nullable=True)
     price = Column(Numeric(10, 2), nullable=False)
-    created_at = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
-    updated_at = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.current_timestamp(), nullable=False)
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)

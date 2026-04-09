@@ -1,9 +1,9 @@
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.user_repository import UserRepository
-from app.core.security import get_password_hash, verify_password, create_access_token
+from app.core.security import get_password_hash, verify_password, create_access_token, ensure_aware
 from app.models.user import User, VerificationCode, VerificationTypeEnum, RoleEnum
 from app.services.email_service import send_verification_email, send_reset_email
 from app.schemas.auth import UserRegister, UserLogin, ResetPasswordRequest
@@ -36,7 +36,7 @@ class AuthService:
         # Generate verification code
         code = "".join([str(random.randint(0, 9)) for _ in range(6)])
         code_hash = get_password_hash(code)
-        expires_at = datetime.utcnow() + timedelta(hours=24)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
         
         verification_code = VerificationCode(
             email=user_data.email,
@@ -82,7 +82,7 @@ class AuthService:
 
     async def forgot_password(self, email: str):
         # Rate limiting: Max 5 requests per hour per email
-        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+        one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
         request_count = await self.user_repo.count_verification_requests(email, VerificationTypeEnum.reset_password, one_hour_ago)
         
         if request_count >= 5:
@@ -97,7 +97,7 @@ class AuthService:
         if user:
             code = "".join([str(random.randint(0, 9)) for _ in range(6)])
             code_hash = get_password_hash(code)
-            expires_at = datetime.utcnow() + timedelta(minutes=15)
+            expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
             
             await self.user_repo.invalidate_previous_codes(email, VerificationTypeEnum.reset_password)
             
@@ -119,7 +119,7 @@ class AuthService:
         if not reset_code:
             raise HTTPException(status_code=400, detail="Invalid or expired verification code")
         
-        if datetime.utcnow() > reset_code.expires_at:
+        if datetime.now(timezone.utc) > ensure_aware(reset_code.expires_at):
             raise HTTPException(status_code=400, detail="Verification code has expired")
         
         if not verify_password(request.code, reset_code.code_hash):
@@ -141,7 +141,7 @@ class AuthService:
         if not verification_code:
             raise HTTPException(status_code=400, detail="Invalid or expired verification code")
         
-        if datetime.utcnow() > verification_code.expires_at:
+        if datetime.now(timezone.utc) > ensure_aware(verification_code.expires_at):
             raise HTTPException(status_code=400, detail="Verification code has expired")
         
         if not verify_password(code, verification_code.code_hash):
@@ -165,7 +165,7 @@ class AuthService:
         if user.is_verified:
             return {"status": "success", "message": "Email already verified"}
         
-        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+        one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
         request_count = await self.user_repo.count_verification_requests(email, VerificationTypeEnum.verify_email, one_hour_ago)
         
         if request_count >= 5:
@@ -176,7 +176,7 @@ class AuthService:
 
         code = "".join([str(random.randint(0, 9)) for _ in range(6)])
         code_hash = get_password_hash(code)
-        expires_at = datetime.utcnow() + timedelta(hours=24)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
         
         await self.user_repo.invalidate_previous_codes(email, VerificationTypeEnum.verify_email)
         

@@ -1,10 +1,34 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
+import re
 
 class CardBase(BaseModel):
     card_number: str
-    expires: Optional[str] = None # MM/YY
+    expires: str # MM/YY
+
+    @field_validator('card_number')
+    @classmethod
+    def validate_card_number(cls, v):
+        if not re.match(r'^\d{16}$', v):
+            raise ValueError('Card number must be exactly 16 digits')
+        return v
+
+    @field_validator('expires')
+    @classmethod
+    def validate_expires(cls, v):
+        if not re.match(r'^(0[1-9]|1[0-2])\/\d{2}$', v):
+            raise ValueError('Expiration date must be in MM/YY format')
+        
+        # Check if expired
+        month, year = map(int, v.split('/'))
+        year += 2000 # Assume 21st century
+        
+        now = datetime.now(timezone.utc)
+        if year < now.year or (year == now.year and month < now.month):
+            raise ValueError('Card has expired')
+            
+        return v
 
 class CardCreate(CardBase):
     pass
