@@ -9,5 +9,5 @@ class AvailableDiscount(Base):
     min_days = Column(Integer, nullable=False)
     max_days = Column(Integer, nullable=False)
     discount_percent = Column(Numeric(5, 2), nullable=False)
-    created_at = Column(TIMESTAMP, server_default=func.current_timestamp(), nullable=False)
-    updated_at = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.current_timestamp(), nullable=False)
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.current_timestamp(), onupdate=func.current_timestamp(), nullable=False)
