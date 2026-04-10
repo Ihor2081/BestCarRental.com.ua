@@ -1,8 +1,9 @@
 
 export interface CreateBookingRequest {
   car_id: number;
-  start_date: string;
-  end_date: string;
+  start_time: string;
+  end_time: string;
+  pick_up_location: string;
 }
 
 export interface BookingResponse {

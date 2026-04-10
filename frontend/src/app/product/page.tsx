@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, Star, Users, Briefcase, Gauge, Fuel,
   Check, Shield, Navigation, Baby, Wifi, MapPin,
@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import type { AdditionalService } from "@/types";
 import type { Car } from "@/features/cars/types";
+import { bookingService } from "@/features/bookings/services/booking.service";
+import type { CreateBookingRequest } from "@/features/bookings/types";
 
 function ProductPageFallback() {
   return (
@@ -20,6 +22,7 @@ function ProductPageFallback() {
 }
 
 function ProductPageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const carIdParam = searchParams.get("id");
   const carId = carIdParam ? Number(carIdParam) : NaN;
@@ -31,6 +34,10 @@ function ProductPageContent() {
   const [services, setServices] = useState<AdditionalService[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [servicesError, setServicesError] = useState<string | null>(null);
+
+  const [selectedServices, setSelectedServices] = useState<number[]>([]);
+  const [pickUpLocation, setPickUpLocation] = useState('Kyiv');
+  const [bookingLoading, setBookingLoading] = useState(false);
 
   useEffect(() => {
     if (!Number.isInteger(carId) || carId <= 0) {
@@ -194,6 +201,25 @@ function ProductPageContent() {
   const carTitle = `${car.make} ${car.model}`;
   const formattedPrice = Number(car.price_per_day).toFixed(2);
 
+  const handleBookNow = async () => {
+    setBookingLoading(true);
+    const bookingData: CreateBookingRequest = {
+      car_id: carId,
+      start_time: pickUpDate,
+      end_time: returnDate,
+      pick_up_location: pickUpLocation,
+    };
+
+    try {
+      await bookingService.createBooking(bookingData);
+      router.push('/profile?tab=bookings');
+    } catch (error: any) {
+      alert(`Booking failed: ${error?.message || 'An unknown error occurred.'}`);
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
   return (
     <main className="container mx-auto px-4 max-w-7xl py-8">
       {/* BREADCRUMB */}
@@ -332,7 +358,8 @@ function ProductPageContent() {
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <select 
-                    defaultValue="Kyiv"
+                    value={pickUpLocation}
+                    onChange={(e) => setPickUpLocation(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none text-sm"
                   >
                     {pickUpLocations.map(location => (
@@ -383,8 +410,12 @@ function ProductPageContent() {
               </ul>
             </div>
 
-            <button className="w-full bg-black text-white py-4 rounded-lg font-bold text-lg hover:bg-gray-900 transition-colors">
-              Book Now
+            <button 
+              onClick={handleBookNow}
+              disabled={bookingLoading}
+              className="w-full bg-black text-white py-4 rounded-lg font-bold text-lg hover:bg-gray-900 transition-colors disabled:opacity-50"
+            >
+              {bookingLoading ? 'Booking...' : 'Book Now'}
             </button>
 
             <p className="text-center text-xs text-gray-400 mt-4">
