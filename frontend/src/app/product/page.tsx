@@ -155,6 +155,15 @@ function ProductPageContent() {
   const tomorrowDate = useMemo(() => new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10), []);
   const [pickUpDate, setPickUpDate] = useState(todayDate);
   const [returnDate, setReturnDate] = useState(tomorrowDate);
+  
+  // Calculate number of days between pick-up and return dates
+  const daysNumber = useMemo(() => {
+    const pickUp = new Date(pickUpDate);
+    const returnDateObj = new Date(returnDate);
+    const diffInTime = returnDateObj.getTime() - pickUp.getTime();
+    const diffInDays = Math.ceil(diffInTime / (1000 * 3600 * 24));
+    return Math.max(1, diffInDays); // at least 1 day
+  }, [pickUpDate, returnDate]);
 
   const capitalizeText = (text: string) => {
     if (!text) return "";
@@ -354,12 +363,13 @@ function ProductPageContent() {
 
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-gray-600">
-                <span>${formattedPrice} × 1 day</span>
-                <span>${formattedPrice}</span>
+                <span>${formattedPrice} × {daysNumber} day{daysNumber > 1 ? 's' : ''}</span>
+                <span>${(Number(formattedPrice) * daysNumber).toFixed(2)}</span>
               </div>
+
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span className="text-blue-600">${formattedPrice}</span>
+                <span className="text-blue-600">${(Number(formattedPrice) * daysNumber).toFixed(2)}</span>
               </div>
             </div>
 
