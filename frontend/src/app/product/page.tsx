@@ -113,6 +113,49 @@ function ProductPageContent() {
       .filter(Boolean);
   }, [car]);
 
+  const pickUpLocations = ["Kyiv", "Lviv", "Odesa"];
+
+  function PickUpDateInputField({ date, setDate }: { date: string; setDate: (date: string) => void }) {
+    // Formats to 'YYYY-MM-DD'
+    const today = new Date().toISOString().slice(0, 10);
+
+    return (
+      <input 
+        type="date"
+        value={date}
+        min={today}
+        onChange={(e) => setDate(e.target.value)} 
+        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none text-sm"
+      />
+    );
+  }
+
+  function ReturnDateInputField({ date, setDate, pickUpDate }: { date: string; setDate: (date: string) => void; pickUpDate: string }) {
+    const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newDate = e.target.value;
+      // Validation: ensure return date is always after pick-up date
+      if (newDate > pickUpDate) {
+        setDate(newDate);
+      }
+    };
+
+    return (
+      <input 
+        type="date"
+        value={date} 
+        onChange={handleDateChange}
+        min={pickUpDate}
+        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none text-sm"
+      />
+    );
+  }
+
+  // Date state management
+  const todayDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const tomorrowDate = useMemo(() => new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10), []);
+  const [pickUpDate, setPickUpDate] = useState(todayDate);
+  const [returnDate, setReturnDate] = useState(tomorrowDate);
+
   const capitalizeText = (text: string) => {
     if (!text) return "";
     return text.charAt(0).toUpperCase() + text.slice(1);
@@ -279,12 +322,14 @@ function ProductPageContent() {
                 <label className="block text-sm font-semibold mb-2">Pick-up Location</label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input 
-                    type="text" 
-                    placeholder="City or Airport" 
-                    defaultValue="San Francisco Airport"
+                  <select 
+                    defaultValue="Kyiv"
                     className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none text-sm"
-                  />
+                  >
+                    {pickUpLocations.map(location => (
+                      <option key={location} value={location}>{location}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -292,25 +337,15 @@ function ProductPageContent() {
                 <label className="block text-sm font-semibold mb-2">Pick-up Date</label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input 
-                    type="text" 
-                    placeholder="dd.mm.yyyy" 
-                    defaultValue="20.02.2026"
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none text-sm"
-                  />
+                  <PickUpDateInputField date={pickUpDate} setDate={setPickUpDate} />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-semibold mb-2">Return Date</label>
                 <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input 
-                    type="text" 
-                    placeholder="dd.mm.yyyy" 
-                    defaultValue="21.02.2026"
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none text-sm"
-                  />
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <ReturnDateInputField date={returnDate} setDate={setReturnDate} pickUpDate={pickUpDate} />
                 </div>
               </div>
             </div>
