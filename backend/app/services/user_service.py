@@ -40,6 +40,11 @@ class UserService:
                     "location": deal.pick_up_location,
                     "status": deal.status,
                     "price": f"${deal.total_price:,.0f}",
+                    "additional_services": (
+                        deal.additional_services.split(", ")
+                        if deal.additional_services
+                        else []
+                    ),
                 }
             )
 

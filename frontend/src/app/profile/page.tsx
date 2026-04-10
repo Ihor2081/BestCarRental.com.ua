@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { UserMe } from "@/types";
+import { UserMe, AdditionalService } from "@/types";
 import CardModal from "@/components/profile/CardModal";
 import EditProfileModal from "@/components/profile/EditProfileModal";
 
@@ -26,6 +26,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [showCardModal, setShowCardModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [services, setServices] = useState<AdditionalService[]>([]);
 
   const fetchUserData = async () => {
     try {
@@ -72,6 +73,18 @@ export default function ProfilePage() {
     window.dispatchEvent(new Event("auth-change"));
     router.push("/");
   };
+
+  useEffect(() => {
+    async function fetchServices() {
+      const response = await fetch('/api/services');
+      if (!response.ok) {
+        throw new Error('Failed to load services');
+      }
+      const data: AdditionalService[] = await response.json();
+      setServices(data);
+    }
+    fetchServices();
+  }, []);
 
   const handleDeleteCard = async (cardId: number) => {
     if (!confirm("Are you sure you want to delete this card?")) return;
@@ -230,6 +243,7 @@ export default function ProfilePage() {
                           <h4 className="font-bold text-lg">{b.car}</h4>
                           <p className="text-sm text-gray-700">Period: {b.date}</p>
                           <p className="text-sm text-gray-700">Location: {b.location}</p>
+                          <p className="text-sm text-gray-700">Services: {services.filter(service => b.additional_services.map(serv => +serv).includes(service.id)).map(service => service.name).join(", ")}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-8">
