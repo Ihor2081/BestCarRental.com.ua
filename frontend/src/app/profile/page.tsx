@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   User as UserIcon, Mail, Phone, MapPin, CreditCard, 
   History, LogOut, Plus, ShieldCheck, Trash2 
@@ -18,7 +18,10 @@ function cn(...inputs: ClassValue[]) {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("personal");
+  const searchParams = useSearchParams();
+  const activeTabParam = searchParams.get("tab");
+  const activeTabValue = activeTabParam == "bookings" ? activeTabParam : "personal";
+  const [activeTab, setActiveTab] = useState(activeTabValue);
   const [user, setUser] = useState<UserMe | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCardModal, setShowCardModal] = useState(false);
