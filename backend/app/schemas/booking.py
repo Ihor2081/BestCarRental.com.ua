@@ -19,7 +19,7 @@ class BookingCreate(BaseModel):
     start_time: datetime
     end_time: datetime
     pick_up_location: str
-    # additional_services: Optional[str] = None
+    additional_services: Optional[list] = None
 
 
 class BookingUpdate(BaseModel):

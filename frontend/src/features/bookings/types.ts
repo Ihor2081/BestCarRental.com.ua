@@ -4,6 +4,7 @@ export interface CreateBookingRequest {
   start_time: string;
   end_time: string;
   pick_up_location: string;
+  additional_services: number[];
 }
 
 export interface BookingResponse {

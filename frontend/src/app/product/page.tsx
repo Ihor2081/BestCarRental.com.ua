@@ -208,6 +208,7 @@ function ProductPageContent() {
       start_time: pickUpDate,
       end_time: returnDate,
       pick_up_location: pickUpLocation,
+      additional_services: selectedServices,
     };
 
     try {
