@@ -320,7 +320,17 @@ function ProductPageContent() {
                   const IconComponent = getIconComponent(service.icon);
                   return (
                     <label key={service.id} className="service-card cursor-pointer group">
-                      <input type="checkbox" className="hidden peer" />
+                      <input 
+                        type="checkbox" 
+                        className="hidden peer"
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedServices(prev => [...prev, service.id]);
+                          } else {
+                            setSelectedServices(prev => prev.filter(id => id !== service.id));
+                          }
+                        }}
+                      />
                       <div className="service-content bg-white border border-gray-200 rounded-xl p-5 transition-all peer-checked:border-blue-500 peer-checked:bg-blue-50 group-hover:border-gray-300">
                         <div className="flex items-center gap-4">
                           <div className="checkbox-custom w-5 h-5 border-2 border-gray-300 rounded relative peer-checked:bg-blue-600 peer-checked:border-blue-600">
