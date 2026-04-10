@@ -223,17 +223,18 @@ export default function ProfilePage() {
                     <div key={b.id} className="flex flex-col md:flex-row items-center justify-between p-6 bg-gray-50 rounded-3xl border border-gray-100 gap-4">
                       <div className="flex items-center gap-6">
                         <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                          <History className="w-8 h-8 text-gray-300" />
+                          <img src={b.car_image} alt={b.car} className="w-full h-full object-cover" />
                         </div>
                         <div>
-                          <div className="text-xs font-bold text-gray-400 uppercase mb-1">{b.id}</div>
+                          <div className="text-xs font-bold text-gray-400 uppercase mb-1">#{b.id}</div>
                           <h4 className="font-bold text-lg">{b.car}</h4>
-                          <p className="text-sm text-gray-500">{b.date}</p>
+                          <p className="text-sm text-gray-700">Period: {b.date}</p>
+                          <p className="text-sm text-gray-700">Location: {b.location}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-8">
                         <div className="text-right">
-                          <div className="text-lg font-bold">{b.price}</div>
+                          <div className="text-lg text-center font-bold">{b.price}</div>
                           <span className={cn("status-badge", b.status)}>{b.status}</span>
                         </div>
                       </div>

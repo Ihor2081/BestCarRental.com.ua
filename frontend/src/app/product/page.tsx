@@ -373,7 +373,7 @@ function ProductPageContent() {
               </div>
             </div>
 
-            <div className="discount-box bg-blue-50 rounded-xl p-4 mb-6">
+            <div className="hidden discount-box bg-blue-50 rounded-xl p-4 mb-6">
               <div className="font-semibold mb-2 text-sm">Available Discounts:</div>
               <ul className="text-xs text-gray-500 space-y-1">
                 <li>• 10% off for 3-6 days</li>
