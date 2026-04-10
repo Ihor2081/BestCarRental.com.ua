@@ -172,6 +172,16 @@ function ProductPageContent() {
     return Math.max(1, diffInDays); // at least 1 day
   }, [pickUpDate, returnDate]);
 
+  const additionalServicesPrice = useMemo(() => {
+    let total = 0;
+    for (let service of services) {
+      if (selectedServices.includes(service.id)) {
+        total += parseFloat(service.price);
+      }
+    }
+    return total;
+  }, [services, selectedServices]);
+
   const capitalizeText = (text: string) => {
     if (!text) return "";
     return text.charAt(0).toUpperCase() + text.slice(1);
@@ -404,10 +414,21 @@ function ProductPageContent() {
                 <span>${formattedPrice} × {daysNumber} day{daysNumber > 1 ? 's' : ''}</span>
                 <span>${(Number(formattedPrice) * daysNumber).toFixed(2)}</span>
               </div>
+              
+              {selectedServices.length > 0 && (
+                <div className="flex justify-between text-gray-600">
+                  <span>Additional Services:</span>
+                  <span>
+                    ${additionalServicesPrice.toFixed(2)}
+                  </span>
+                </div>
+              )}
 
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span className="text-blue-600">${(Number(formattedPrice) * daysNumber).toFixed(2)}</span>
+                <span className="text-blue-600">
+                  ${(Number(formattedPrice) * daysNumber + additionalServicesPrice).toFixed(2)}
+                </span>
               </div>
             </div>
 
