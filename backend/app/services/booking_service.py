@@ -20,8 +20,9 @@ class BookingService:
     async def create_booking(self, user: User, booking_data: BookingCreate):
         car = await self.car_repo.get(booking_data.car_id)
         services = await self.service_repo.get_all_ordered()
+        booking_duration = (booking_data.end_time - booking_data.start_time).days
         services_price = self.calculate_services_price(
-            services, booking_data.additional_services
+            services, booking_data.additional_services, booking_duration
         )
 
         if not car:
@@ -41,7 +42,7 @@ class BookingService:
             map(str, booking_data.additional_services)
         )
         booking_dict["total_price"] = self.calculate_total_price(
-            car, booking_data.start_time, booking_data.end_time, services_price
+            car, booking_duration, services_price
         )
 
         booking = await self.booking_repo.create(booking_dict)
@@ -70,17 +71,18 @@ class BookingService:
             booking, {"status": DealStatusEnum.cancelled}
         )
 
-    def calculate_services_price(self, services, selected_ids) -> float:
+    def calculate_services_price(
+        self, services, selected_ids, booking_duration
+    ) -> float:
         total = 0.0
         for service in services:
             if service.id in selected_ids:
-                total += float(service.price)
+                total += float(service.price * booking_duration)
         return total
 
     def calculate_total_price(
-        self, car: Car, start_time, end_time, services_price
+        self, car: Car, booking_duration: int, services_price: float
     ) -> float:
-        duration = (end_time - start_time).days
-        total_price = float(duration * car.price_per_day) + services_price
+        total_price = float(booking_duration * car.price_per_day) + services_price
 
         return total_price

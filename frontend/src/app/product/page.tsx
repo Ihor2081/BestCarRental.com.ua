@@ -176,11 +176,11 @@ function ProductPageContent() {
     let total = 0;
     for (let service of services) {
       if (selectedServices.includes(service.id)) {
-        total += parseFloat(service.price);
+        total += parseFloat(service.price) * daysNumber;
       }
     }
     return total;
-  }, [services, selectedServices]);
+  }, [services, selectedServices, daysNumber]);
 
   const capitalizeText = (text: string) => {
     if (!text) return "";
