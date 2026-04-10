@@ -3,9 +3,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories.booking_repository import BookingRepository
 from app.repositories.car_repository import CarRepository
 from app.models.booking import DealStatusEnum
-from app.schemas.booking import BookingCreate, BookingResponse
+from app.models.car import CarStatusEnum
+from app.schemas.booking import BookingCreate
 from app.models.user import User
-from typing import List
+from app.models.car import Car
+
 
 class BookingService:
     def __init__(self, db: AsyncSession):
@@ -17,14 +19,21 @@ class BookingService:
         car = await self.car_repo.get(booking_data.car_id)
         if not car:
             raise HTTPException(status_code=404, detail="Car not found")
-        
-        # Check for overlapping bookings
-        # (Simplified for now, in a real app you'd check dates)
-        
+
+        if car.status not in [CarStatusEnum.available]:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot create booking for a car that is not available",
+            )
+
+        # TODO: Check for overlapping bookings
+
         booking_dict = booking_data.dict()
         booking_dict["user_id"] = user.id
-        booking_dict["status"] = DealStatusEnum.pending
-        
+        booking_dict["total_price"] = self.calculate_total_price(
+            car, booking_data.start_time, booking_data.end_time
+        )
+
         booking = await self.booking_repo.create(booking_dict)
         return booking
 
@@ -41,8 +50,18 @@ class BookingService:
         booking = await self.booking_repo.get(booking_id)
         if not booking or booking.user_id != user_id:
             raise HTTPException(status_code=404, detail="Booking not found")
-        
+
         if booking.status not in [DealStatusEnum.pending, DealStatusEnum.confirmed]:
-            raise HTTPException(status_code=400, detail="Cannot cancel booking in current status")
-        
-        return await self.booking_repo.update(booking, {"status": DealStatusEnum.cancelled})
+            raise HTTPException(
+                status_code=400, detail="Cannot cancel booking in current status"
+            )
+
+        return await self.booking_repo.update(
+            booking, {"status": DealStatusEnum.cancelled}
+        )
+
+    def calculate_total_price(self, car: Car, start_time, end_time) -> float:
+        duration = (end_time - start_time).days
+        total_price = duration * car.price_per_day
+
+        return total_price
