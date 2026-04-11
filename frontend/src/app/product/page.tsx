@@ -203,6 +203,17 @@ function ProductPageContent() {
     return total;
   }, [services, selectedServices, daysNumber]);
 
+  const totalPriceWithoutDiscounts = useMemo(() => {
+    let total = Number(car?.price_per_day || 0) * daysNumber + additionalServicesPrice;
+    return total;
+  }, [car, daysNumber, additionalServicesPrice]);
+
+  const discountAmount = useMemo(() => {
+    const applicableDiscounts = discounts.filter(d => d.min_days <= daysNumber && (d.max_days === null || daysNumber <= d.max_days));
+    const amount = applicableDiscounts.reduce((sum, d) => sum + (totalPriceWithoutDiscounts * d.discount_percent / 100), 0);
+    return amount;
+  }, [discounts, totalPriceWithoutDiscounts]);
+
   const capitalizeText = (text: string) => {
     if (!text) return "";
     return text.charAt(0).toUpperCase() + text.slice(1);
@@ -445,10 +456,17 @@ function ProductPageContent() {
                 </div>
               )}
 
+              { discountAmount > 0 && (
+                <div className="flex justify-between text-green-700">
+                  <span>Discount</span>
+                  <span>-${discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
                 <span className="text-blue-600">
-                  ${(Number(formattedPrice) * daysNumber + additionalServicesPrice).toFixed(2)}
+                  ${(totalPriceWithoutDiscounts - discountAmount).toFixed(2)}
                 </span>
               </div>
             </div>
