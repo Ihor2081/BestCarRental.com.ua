@@ -21,6 +21,7 @@ from app.api.user_router import router as user_router
 from app.api.car_router import router as car_router
 from app.api.service_router import router as service_router
 from app.api.booking_router import router as booking_router
+from app.api.discount_router import router as discount_router
 
 load_dotenv()
 
@@ -49,6 +50,7 @@ app.include_router(car_router, prefix="/api/cars")
 app.include_router(car_router, prefix="/api/catalog")
 app.include_router(service_router, prefix="/api/services")
 app.include_router(booking_router, prefix="/api/bookings")
+app.include_router(discount_router, prefix="/api/discounts")
 
 @app.on_event("startup")
 async def on_startup():

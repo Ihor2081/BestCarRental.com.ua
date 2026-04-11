@@ -68,7 +68,7 @@ export interface Settings {
 export interface Discount {
   id: number;
   min_days: number;
-  max_days: number;
+  max_days: number | null;
   discount_percent: number;
 }
 

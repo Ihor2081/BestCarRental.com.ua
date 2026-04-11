@@ -8,7 +8,7 @@ import {
   Check, Shield, Navigation, Baby, Wifi, MapPin,
   Calendar, Clock
 } from "lucide-react";
-import type { AdditionalService } from "@/types";
+import type { AdditionalService, Discount } from "@/types";
 import type { Car } from "@/features/cars/types";
 import { bookingService } from "@/features/bookings/services/booking.service";
 import type { CreateBookingRequest } from "@/features/bookings/types";
@@ -38,6 +38,8 @@ function ProductPageContent() {
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [pickUpLocation, setPickUpLocation] = useState('Kyiv');
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [discountsLoading, setDiscountsLoading] = useState(true);
 
   useEffect(() => {
     if (!Number.isInteger(carId) || carId <= 0) {
@@ -98,6 +100,25 @@ function ProductPageContent() {
       }
     }
     fetchServices();
+  }, []);
+
+  useEffect(() => {
+    async function fetchDiscounts() {
+      try {
+        setDiscountsLoading(true);
+        const response = await fetch('/api/discounts');
+        if (!response.ok) {
+          throw new Error('Failed to load discounts');
+        }
+        const data: Discount[] = await response.json();
+        setDiscounts(data);
+      } catch (err) {
+        console.error('Error fetching discounts:', err);
+      } finally {
+        setDiscountsLoading(false);
+      }
+    }
+    fetchDiscounts();
   }, []);
 
   const iconMap: Record<string, React.ComponentType<any>> = {
@@ -432,15 +453,23 @@ function ProductPageContent() {
               </div>
             </div>
 
-            <div className="hidden discount-box bg-blue-50 rounded-xl p-4 mb-6">
-              <div className="font-semibold mb-2 text-sm">Available Discounts:</div>
-              <ul className="text-xs text-gray-500 space-y-1">
-                <li>• 10% off for 3-6 days</li>
-                <li>• 15% off for 7-13 days</li>
-                <li>• 20% off for 14-29 days</li>
-                <li>• 25% off for 30+ days</li>
-              </ul>
-            </div>
+            {!discountsLoading && discounts.length > 0 && (
+              <div className="discount-box bg-blue-50 rounded-xl p-4 mb-6">
+                <div className="font-semibold mb-2 text-sm">Available Discounts:</div>
+                <ul className="text-xs text-gray-500 space-y-1">
+                  {discounts.map((d) => {
+                    const range = d.max_days
+                      ? `${d.min_days}-${d.max_days} days`
+                      : `${d.min_days}+ days`;
+                    return (
+                      <li key={d.id}>
+                        • {d.discount_percent}% off for {range}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
 
             <button 
               onClick={handleBookNow}

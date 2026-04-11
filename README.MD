@@ -12,7 +12,8 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
   - **Fleet Management**: Full CRUD operations for vehicles with status tracking and **physical photo upload** support.
   - **Booking Control**: Centralized view of all rentals with status filtering and search.
   - **Customer Insights**: Detailed profiles with booking history and financial summaries.
-  - **Features & Discounts**: Manage rental duration discounts and additional services (insurance, GPS, etc.) with dynamic icons.
+  - **Features & Discounts**: Manage rental duration discounts and additional services (insurance, GPS, etc.) with dynamic icons. **Discounts are automatically applied and displayed on product pages based on rental duration.**
+
   - **Support Integration**: Quick access to technical support via a dedicated Discord community modal.
 - **User Profile Management**:
   - **Personal Information**: View and manage account details.
@@ -102,7 +103,6 @@ npm run dev
 - **Backend API**: [http://localhost:8000](http://localhost:8000)
 - **API Documentation (Swagger)**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-<<<<<<< Setup-Unit-Testing-Environment-#ID-15
 ### 6. Running Tests
 
 The backend includes a suite of unit tests for services and schemas. To run them:
@@ -123,17 +123,6 @@ You can verify the status of the application and database using these endpoints:
 
 ---
 
-=======
-### 🔍 Health Checks
-
-You can verify the status of the application and database using these endpoints:
-
-- **Backend Health**: [http://localhost:8000/api/health](http://localhost:8000/api/health)
-- **Database Health**: [http://localhost:8000/db-status](http://localhost:8000/db-status)
-
----
-
->>>>>>> main
 ## 📂 Project Structure
 
 The project follows a monorepo architecture with a clear separation of concerns:
@@ -142,21 +131,17 @@ backend/
 │
 ├── alembic.ini
 ├── requirements.txt
-<<<<<<< Setup-Unit-Testing-Environment-#ID-15
 ├──tests/
 │   ├── conftest.py          # Global fixtures and configuration
 │   ├── test_schemas/        # Unit tests for Pydantic schemas
 │   └── test_services/       # Unit tests for business logic (Service Layer)
-=======
->>>>>>> main
 ├── migrations/ # Alembic database migration scripts.
 │   ├── versions/
 │   │   ├── .keep
 │   │   ├── 0001_initial_schema.py
 │   │   ├── 0002_add_password_reset_codes.py
 │   │   ├── 0003_add_email_verification.py
-│   │   ├── a6cec37fc2b6_message.py
-│   │   └── b643f49beec7_add_cards_table.py
+│   │   └── ...
 │   ├── env.py
 │   ├── README.MD
 │   └── script.py
@@ -279,6 +264,9 @@ frontend/
 - `POST /change-password`: Update account password (requires current password).
 - `POST /cards`: Add a new payment card to the user's profile.
 - `DELETE /cards/{card_id}`: Remove a specific payment card.
+
+### Discounts (`/api/discounts`)
+- `GET /`: List all available rental duration discounts (Public).
 
 ### Cars Catalog (`/api/cars` & `/api/catalog`)
 - `GET /`: List all vehicles with advanced filtering (price, transmission, etc.) and pagination.
