@@ -1,7 +1,8 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Optional, List
+from typing import Optional
 from decimal import Decimal
 from datetime import datetime
+
 
 class BookingBase(BaseModel):
     car_id: int
@@ -12,14 +13,21 @@ class BookingBase(BaseModel):
     additional_services: Optional[str] = None
     status: str = "pending"
 
-class BookingCreate(BookingBase):
-    pass
+
+class BookingCreate(BaseModel):
+    car_id: int
+    start_time: datetime
+    end_time: datetime
+    pick_up_location: str
+    additional_services: Optional[list] = None
+
 
 class BookingUpdate(BaseModel):
     status: Optional[str] = None
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     total_price: Optional[Decimal] = None
+
 
 class BookingResponse(BaseModel):
     id: int
@@ -35,6 +43,7 @@ class BookingResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class AdminBookingResponse(BaseModel):
     id: int

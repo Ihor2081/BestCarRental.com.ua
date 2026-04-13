@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, Star, Users, Briefcase, Gauge, Fuel,
   Check, Shield, Navigation, Baby, Wifi, MapPin,
@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import type { AdditionalService, Discount } from "@/types";
 import type { Car } from "@/features/cars/types";
+import { bookingService } from "@/features/bookings/services/booking.service";
+import type { CreateBookingRequest } from "@/features/bookings/types";
 
 function ProductPageFallback() {
   return (
@@ -20,6 +22,7 @@ function ProductPageFallback() {
 }
 
 function ProductPageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const carIdParam = searchParams.get("id");
   const carId = carIdParam ? Number(carIdParam) : NaN;
@@ -32,6 +35,9 @@ function ProductPageContent() {
   const [servicesLoading, setServicesLoading] = useState(true);
   const [servicesError, setServicesError] = useState<string | null>(null);
 
+  const [selectedServices, setSelectedServices] = useState<number[]>([]);
+  const [pickUpLocation, setPickUpLocation] = useState('Kyiv');
+  const [bookingLoading, setBookingLoading] = useState(false);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [discountsLoading, setDiscountsLoading] = useState(true);
 
@@ -135,6 +141,79 @@ function ProductPageContent() {
       .filter(Boolean);
   }, [car]);
 
+  const pickUpLocations = ["Kyiv", "Lviv", "Odesa"];
+
+  function PickUpDateInputField({ date, setDate }: { date: string; setDate: (date: string) => void }) {
+    // Formats to 'YYYY-MM-DD'
+    const today = new Date().toISOString().slice(0, 10);
+
+    return (
+      <input 
+        type="date"
+        value={date}
+        min={today}
+        onChange={(e) => setDate(e.target.value)} 
+        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none text-sm"
+      />
+    );
+  }
+
+  function ReturnDateInputField({ date, setDate, pickUpDate }: { date: string; setDate: (date: string) => void; pickUpDate: string }) {
+    const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newDate = e.target.value;
+      // Validation: ensure return date is always after pick-up date
+      if (newDate > pickUpDate) {
+        setDate(newDate);
+      }
+    };
+
+    return (
+      <input 
+        type="date"
+        value={date} 
+        onChange={handleDateChange}
+        min={pickUpDate}
+        className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none text-sm"
+      />
+    );
+  }
+
+  // Date state management
+  const todayDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const tomorrowDate = useMemo(() => new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10), []);
+  const [pickUpDate, setPickUpDate] = useState(todayDate);
+  const [returnDate, setReturnDate] = useState(tomorrowDate);
+  
+  // Calculate number of days between pick-up and return dates
+  const daysNumber = useMemo(() => {
+    const pickUp = new Date(pickUpDate);
+    const returnDateObj = new Date(returnDate);
+    const diffInTime = returnDateObj.getTime() - pickUp.getTime();
+    const diffInDays = Math.ceil(diffInTime / (1000 * 3600 * 24));
+    return Math.max(1, diffInDays); // at least 1 day
+  }, [pickUpDate, returnDate]);
+
+  const additionalServicesPrice = useMemo(() => {
+    let total = 0;
+    for (let service of services) {
+      if (selectedServices.includes(service.id)) {
+        total += parseFloat(service.price) * daysNumber;
+      }
+    }
+    return total;
+  }, [services, selectedServices, daysNumber]);
+
+  const totalPriceWithoutDiscounts = useMemo(() => {
+    let total = Number(car?.price_per_day || 0) * daysNumber + additionalServicesPrice;
+    return total;
+  }, [car, daysNumber, additionalServicesPrice]);
+
+  const discountAmount = useMemo(() => {
+    const applicableDiscounts = discounts.filter(d => d.min_days <= daysNumber && (d.max_days === null || daysNumber <= d.max_days));
+    const amount = applicableDiscounts.reduce((sum, d) => sum + (totalPriceWithoutDiscounts * d.discount_percent / 100), 0);
+    return amount;
+  }, [discounts, totalPriceWithoutDiscounts]);
+
   const capitalizeText = (text: string) => {
     if (!text) return "";
     return text.charAt(0).toUpperCase() + text.slice(1);
@@ -163,6 +242,26 @@ function ProductPageContent() {
 
   const carTitle = `${car.make} ${car.model}`;
   const formattedPrice = Number(car.price_per_day).toFixed(2);
+
+  const handleBookNow = async () => {
+    setBookingLoading(true);
+    const bookingData: CreateBookingRequest = {
+      car_id: carId,
+      start_time: pickUpDate,
+      end_time: returnDate,
+      pick_up_location: pickUpLocation,
+      additional_services: selectedServices,
+    };
+
+    try {
+      await bookingService.createBooking(bookingData);
+      router.push('/profile?tab=bookings');
+    } catch (error: any) {
+      alert(`Booking failed: ${error?.message || 'An unknown error occurred.'}`);
+    } finally {
+      setBookingLoading(false);
+    }
+  };
 
   return (
     <main className="container mx-auto px-4 max-w-7xl py-8">
@@ -264,7 +363,17 @@ function ProductPageContent() {
                   const IconComponent = getIconComponent(service.icon);
                   return (
                     <label key={service.id} className="service-card cursor-pointer group">
-                      <input type="checkbox" className="hidden peer" />
+                      <input 
+                        type="checkbox" 
+                        className="hidden peer"
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedServices(prev => [...prev, service.id]);
+                          } else {
+                            setSelectedServices(prev => prev.filter(id => id !== service.id));
+                          }
+                        }}
+                      />
                       <div className="service-content bg-white border border-gray-200 rounded-xl p-5 transition-all peer-checked:border-blue-500 peer-checked:bg-blue-50 group-hover:border-gray-300">
                         <div className="flex items-center gap-4">
                           <div className="checkbox-custom w-5 h-5 border-2 border-gray-300 rounded relative peer-checked:bg-blue-600 peer-checked:border-blue-600">
@@ -301,12 +410,15 @@ function ProductPageContent() {
                 <label className="block text-sm font-semibold mb-2">Pick-up Location</label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input 
-                    type="text" 
-                    placeholder="City or Airport" 
-                    defaultValue="San Francisco Airport"
+                  <select 
+                    value={pickUpLocation}
+                    onChange={(e) => setPickUpLocation(e.target.value)}
                     className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none text-sm"
-                  />
+                  >
+                    {pickUpLocations.map(location => (
+                      <option key={location} value={location}>{location}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -314,25 +426,15 @@ function ProductPageContent() {
                 <label className="block text-sm font-semibold mb-2">Pick-up Date</label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input 
-                    type="text" 
-                    placeholder="dd.mm.yyyy" 
-                    defaultValue="20.02.2026"
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none text-sm"
-                  />
+                  <PickUpDateInputField date={pickUpDate} setDate={setPickUpDate} />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-semibold mb-2">Return Date</label>
                 <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input 
-                    type="text" 
-                    placeholder="dd.mm.yyyy" 
-                    defaultValue="21.02.2026"
-                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-lg outline-none text-sm"
-                  />
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <ReturnDateInputField date={returnDate} setDate={setReturnDate} pickUpDate={pickUpDate} />
                 </div>
               </div>
             </div>
@@ -341,12 +443,31 @@ function ProductPageContent() {
 
             <div className="space-y-3 mb-6">
               <div className="flex justify-between text-gray-600">
-                <span>${formattedPrice} × 1 day</span>
-                <span>${formattedPrice}</span>
+                <span>${formattedPrice} × {daysNumber} day{daysNumber > 1 ? 's' : ''}</span>
+                <span>${(Number(formattedPrice) * daysNumber).toFixed(2)}</span>
               </div>
+              
+              {selectedServices.length > 0 && (
+                <div className="flex justify-between text-gray-600">
+                  <span>Additional Services:</span>
+                  <span>
+                    ${additionalServicesPrice.toFixed(2)}
+                  </span>
+                </div>
+              )}
+
+              { discountAmount > 0 && (
+                <div className="flex justify-between text-green-700">
+                  <span>Discount</span>
+                  <span>-${discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+
               <div className="flex justify-between font-bold text-lg">
                 <span>Total</span>
-                <span className="text-blue-600">${formattedPrice}</span>
+                <span className="text-blue-600">
+                  ${(totalPriceWithoutDiscounts - discountAmount).toFixed(2)}
+                </span>
               </div>
             </div>
 
@@ -368,8 +489,12 @@ function ProductPageContent() {
               </div>
             )}
 
-            <button className="w-full bg-black text-white py-4 rounded-lg font-bold text-lg hover:bg-gray-900 transition-colors">
-              Book Now
+            <button 
+              onClick={handleBookNow}
+              disabled={bookingLoading}
+              className="w-full bg-black text-white py-4 rounded-lg font-bold text-lg hover:bg-gray-900 transition-colors disabled:opacity-50"
+            >
+              {bookingLoading ? 'Booking...' : 'Book Now'}
             </button>
 
             <p className="text-center text-xs text-gray-400 mt-4">

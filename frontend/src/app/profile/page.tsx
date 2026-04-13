@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
   User as UserIcon, Mail, Phone, MapPin, CreditCard, 
   History, LogOut, Plus, ShieldCheck, Trash2 
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { UserMe } from "@/types";
+import { UserMe, AdditionalService } from "@/types";
 import CardModal from "@/components/profile/CardModal";
 import EditProfileModal from "@/components/profile/EditProfileModal";
 
@@ -18,11 +18,15 @@ function cn(...inputs: ClassValue[]) {
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("personal");
+  const searchParams = useSearchParams();
+  const activeTabParam = searchParams.get("tab");
+  const activeTabValue = activeTabParam == "bookings" ? activeTabParam : "personal";
+  const [activeTab, setActiveTab] = useState(activeTabValue);
   const [user, setUser] = useState<UserMe | null>(null);
   const [loading, setLoading] = useState(true);
   const [showCardModal, setShowCardModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [services, setServices] = useState<AdditionalService[]>([]);
 
   const fetchUserData = async () => {
     try {
@@ -69,6 +73,18 @@ export default function ProfilePage() {
     window.dispatchEvent(new Event("auth-change"));
     router.push("/");
   };
+
+  useEffect(() => {
+    async function fetchServices() {
+      const response = await fetch('/api/services');
+      if (!response.ok) {
+        throw new Error('Failed to load services');
+      }
+      const data: AdditionalService[] = await response.json();
+      setServices(data);
+    }
+    fetchServices();
+  }, []);
 
   const handleDeleteCard = async (cardId: number) => {
     if (!confirm("Are you sure you want to delete this card?")) return;
@@ -220,17 +236,19 @@ export default function ProfilePage() {
                     <div key={b.id} className="flex flex-col md:flex-row items-center justify-between p-6 bg-gray-50 rounded-3xl border border-gray-100 gap-4">
                       <div className="flex items-center gap-6">
                         <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm">
-                          <History className="w-8 h-8 text-gray-300" />
+                          <img src={b.car_image} alt={b.car} className="w-full h-full object-cover" />
                         </div>
                         <div>
-                          <div className="text-xs font-bold text-gray-400 uppercase mb-1">{b.id}</div>
+                          <div className="text-xs font-bold text-gray-400 uppercase mb-1">#{b.id}</div>
                           <h4 className="font-bold text-lg">{b.car}</h4>
-                          <p className="text-sm text-gray-500">{b.date}</p>
+                          <p className="text-sm text-gray-700">Period: {b.date}</p>
+                          <p className="text-sm text-gray-700">Location: {b.location}</p>
+                          <p className="text-sm text-gray-700">Services: {services.filter(service => b.additional_services.map(serv => +serv).includes(service.id)).map(service => service.name).join(", ")}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-8">
                         <div className="text-right">
-                          <div className="text-lg font-bold">{b.price}</div>
+                          <div className="text-lg text-center font-bold">{b.price}</div>
                           <span className={cn("status-badge", b.status)}>{b.status}</span>
                         </div>
                       </div>
