@@ -1,0 +1,61 @@
+bcc7151c08660347a206d98e63e06b9f
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+const _jsxruntime = require("react/jsx-runtime");
+const _react = require("@testing-library/react");
+const _page = /*#__PURE__*/ _interop_require_default(require("./page"));
+function _interop_require_default(obj) {
+    return obj && obj.__esModule ? obj : {
+        default: obj
+    };
+}
+describe("AboutPage", ()=>{
+    it("renders the main sections and hero content", ()=>{
+        (0, _react.render)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_page.default, {}));
+        expect(_react.screen.getByRole("heading", {
+            name: "About DriveAway"
+        })).toBeInTheDocument();
+        expect(_react.screen.getByRole("heading", {
+            name: "Our Story"
+        })).toBeInTheDocument();
+        expect(_react.screen.getByRole("heading", {
+            name: "DriveAway by the Numbers"
+        })).toBeInTheDocument();
+        expect(_react.screen.getByRole("heading", {
+            name: "Our Core Values"
+        })).toBeInTheDocument();
+        expect(_react.screen.getByRole("heading", {
+            name: "Why Choose DriveAway?"
+        })).toBeInTheDocument();
+        expect(_react.screen.getByAltText("DriveAway Team")).toBeInTheDocument();
+    });
+    it("renders the stats, values, and reasons to choose DriveAway", ()=>{
+        (0, _react.render)(/*#__PURE__*/ (0, _jsxruntime.jsx)(_page.default, {}));
+        [
+            "5,000+",
+            "50+",
+            "100K+",
+            "4.8★"
+        ].forEach((stat)=>{
+            expect(_react.screen.getByText(stat)).toBeInTheDocument();
+        });
+        [
+            "Customer First",
+            "Trust & Transparency",
+            "Excellence",
+            "Innovation",
+            "Sustainability",
+            "Community",
+            "Premium Fleet",
+            "Convenient Locations",
+            "Flexible Policies",
+            "24/7 Support"
+        ].forEach((label)=>{
+            expect(_react.screen.getByText(label)).toBeInTheDocument();
+        });
+    });
+});
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbIkQ6XFzQmtGD0YDRgdC4XFxEcml2ZUF3YXlcXGZyb250ZW5kXFxzcmNcXGFwcFxcYWJvdXRcXHBhZ2UudGVzdC50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgcmVuZGVyLCBzY3JlZW4gfSBmcm9tIFwiQHRlc3RpbmctbGlicmFyeS9yZWFjdFwiO1xuXG5pbXBvcnQgQWJvdXRQYWdlIGZyb20gXCIuL3BhZ2VcIjtcblxuZGVzY3JpYmUoXCJBYm91dFBhZ2VcIiwgKCkgPT4ge1xuICBpdChcInJlbmRlcnMgdGhlIG1haW4gc2VjdGlvbnMgYW5kIGhlcm8gY29udGVudFwiLCAoKSA9PiB7XG4gICAgcmVuZGVyKDxBYm91dFBhZ2UgLz4pO1xuXG4gICAgZXhwZWN0KFxuICAgICAgc2NyZWVuLmdldEJ5Um9sZShcImhlYWRpbmdcIiwgeyBuYW1lOiBcIkFib3V0IERyaXZlQXdheVwiIH0pLFxuICAgICkudG9CZUluVGhlRG9jdW1lbnQoKTtcbiAgICBleHBlY3Qoc2NyZWVuLmdldEJ5Um9sZShcImhlYWRpbmdcIiwgeyBuYW1lOiBcIk91ciBTdG9yeVwiIH0pKS50b0JlSW5UaGVEb2N1bWVudCgpO1xuICAgIGV4cGVjdChcbiAgICAgIHNjcmVlbi5nZXRCeVJvbGUoXCJoZWFkaW5nXCIsIHsgbmFtZTogXCJEcml2ZUF3YXkgYnkgdGhlIE51bWJlcnNcIiB9KSxcbiAgICApLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgZXhwZWN0KFxuICAgICAgc2NyZWVuLmdldEJ5Um9sZShcImhlYWRpbmdcIiwgeyBuYW1lOiBcIk91ciBDb3JlIFZhbHVlc1wiIH0pLFxuICAgICkudG9CZUluVGhlRG9jdW1lbnQoKTtcbiAgICBleHBlY3QoXG4gICAgICBzY3JlZW4uZ2V0QnlSb2xlKFwiaGVhZGluZ1wiLCB7IG5hbWU6IFwiV2h5IENob29zZSBEcml2ZUF3YXk/XCIgfSksXG4gICAgKS50b0JlSW5UaGVEb2N1bWVudCgpO1xuICAgIGV4cGVjdChzY3JlZW4uZ2V0QnlBbHRUZXh0KFwiRHJpdmVBd2F5IFRlYW1cIikpLnRvQmVJblRoZURvY3VtZW50KCk7XG4gIH0pO1xuXG4gIGl0KFwicmVuZGVycyB0aGUgc3RhdHMsIHZhbHVlcywgYW5kIHJlYXNvbnMgdG8gY2hvb3NlIERyaXZlQXdheVwiLCAoKSA9PiB7XG4gICAgcmVuZGVyKDxBYm91dFBhZ2UgLz4pO1xuXG4gICAgW1wiNSwwMDArXCIsIFwiNTArXCIsIFwiMTAwSytcIiwgXCI0LjjimIVcIl0uZm9yRWFjaCgoc3RhdCkgPT4ge1xuICAgICAgZXhwZWN0KHNjcmVlbi5nZXRCeVRleHQoc3RhdCkpLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgfSk7XG5cbiAgICBbXG4gICAgICBcIkN1c3RvbWVyIEZpcnN0XCIsXG4gICAgICBcIlRydXN0ICYgVHJhbnNwYXJlbmN5XCIsXG4gICAgICBcIkV4Y2VsbGVuY2VcIixcbiAgICAgIFwiSW5ub3ZhdGlvblwiLFxuICAgICAgXCJTdXN0YWluYWJpbGl0eVwiLFxuICAgICAgXCJDb21tdW5pdHlcIixcbiAgICAgIFwiUHJlbWl1bSBGbGVldFwiLFxuICAgICAgXCJDb252ZW5pZW50IExvY2F0aW9uc1wiLFxuICAgICAgXCJGbGV4aWJsZSBQb2xpY2llc1wiLFxuICAgICAgXCIyNC83IFN1cHBvcnRcIixcbiAgICBdLmZvckVhY2goKGxhYmVsKSA9PiB7XG4gICAgICBleHBlY3Qoc2NyZWVuLmdldEJ5VGV4dChsYWJlbCkpLnRvQmVJblRoZURvY3VtZW50KCk7XG4gICAgfSk7XG4gIH0pO1xufSk7XG4iXSwibmFtZXMiOlsiZGVzY3JpYmUiLCJpdCIsInJlbmRlciIsIkFib3V0UGFnZSIsImV4cGVjdCIsInNjcmVlbiIsImdldEJ5Um9sZSIsIm5hbWUiLCJ0b0JlSW5UaGVEb2N1bWVudCIsImdldEJ5QWx0VGV4dCIsImZvckVhY2giLCJzdGF0IiwiZ2V0QnlUZXh0IiwibGFiZWwiXSwibWFwcGluZ3MiOiI7Ozs7O3VCQUErQjs2REFFVDs7Ozs7O0FBRXRCQSxTQUFTLGFBQWE7SUFDcEJDLEdBQUcsOENBQThDO1FBQy9DQyxJQUFBQSxhQUFNLGdCQUFDLHFCQUFDQyxhQUFTO1FBRWpCQyxPQUNFQyxhQUFNLENBQUNDLFNBQVMsQ0FBQyxXQUFXO1lBQUVDLE1BQU07UUFBa0IsSUFDdERDLGlCQUFpQjtRQUNuQkosT0FBT0MsYUFBTSxDQUFDQyxTQUFTLENBQUMsV0FBVztZQUFFQyxNQUFNO1FBQVksSUFBSUMsaUJBQWlCO1FBQzVFSixPQUNFQyxhQUFNLENBQUNDLFNBQVMsQ0FBQyxXQUFXO1lBQUVDLE1BQU07UUFBMkIsSUFDL0RDLGlCQUFpQjtRQUNuQkosT0FDRUMsYUFBTSxDQUFDQyxTQUFTLENBQUMsV0FBVztZQUFFQyxNQUFNO1FBQWtCLElBQ3REQyxpQkFBaUI7UUFDbkJKLE9BQ0VDLGFBQU0sQ0FBQ0MsU0FBUyxDQUFDLFdBQVc7WUFBRUMsTUFBTTtRQUF3QixJQUM1REMsaUJBQWlCO1FBQ25CSixPQUFPQyxhQUFNLENBQUNJLFlBQVksQ0FBQyxtQkFBbUJELGlCQUFpQjtJQUNqRTtJQUVBUCxHQUFHLDhEQUE4RDtRQUMvREMsSUFBQUEsYUFBTSxnQkFBQyxxQkFBQ0MsYUFBUztRQUVqQjtZQUFDO1lBQVU7WUFBTztZQUFTO1NBQU8sQ0FBQ08sT0FBTyxDQUFDLENBQUNDO1lBQzFDUCxPQUFPQyxhQUFNLENBQUNPLFNBQVMsQ0FBQ0QsT0FBT0gsaUJBQWlCO1FBQ2xEO1FBRUE7WUFDRTtZQUNBO1lBQ0E7WUFDQTtZQUNBO1lBQ0E7WUFDQTtZQUNBO1lBQ0E7WUFDQTtTQUNELENBQUNFLE9BQU8sQ0FBQyxDQUFDRztZQUNUVCxPQUFPQyxhQUFNLENBQUNPLFNBQVMsQ0FBQ0MsUUFBUUwsaUJBQWlCO1FBQ25EO0lBQ0Y7QUFDRiJ9
