@@ -6,7 +6,8 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "lint": "echo \"Linting skipped\""
+    "lint": "echo \"Linting skipped\"",
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.2.1",
@@ -24,10 +25,15 @@
     "tailwind-merge": "latest"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/jest": "^30.0.0",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "autoprefixer": "latest",
+    "jest": "^30.3.0",
+    "jest-environment-jsdom": "^30.3.0",
     "postcss": "latest",
     "tailwindcss": "latest",
     "typescript": "latest"
