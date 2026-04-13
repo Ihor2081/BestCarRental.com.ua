@@ -4,3 +4,4 @@
 /backend/static/uploads/
 node_modules
 frontend/.next/
+backend/.env.example
