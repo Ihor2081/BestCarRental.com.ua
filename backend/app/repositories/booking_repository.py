@@ -57,3 +57,21 @@ class BookingRepository(BaseRepository[Deal]):
         total_spent = total_spent_res.scalar() or 0
         
         return total_deals, active_deals, total_spent
+
+    async def has_overlap(self, car_id: int, start, end) -> bool:
+      result = await self.db.execute(
+        select(Deal).where(
+            and_(
+                Deal.car_id == car_id,
+
+                # Ігноруємо скасовані бронювання
+                Deal.status != DealStatusEnum.cancelled,
+
+                # 🔥 Основна умова overlap
+                Deal.start_time < end,
+                Deal.end_time > start,
+            )
+        )
+    )
+
+      return result.scalars().first() is not None
