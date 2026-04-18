@@ -37,6 +37,18 @@ export const adminService = {
     return apiClient<Booking[]>("/api/admin/bookings");
   },
 
+  disputeBooking: async (id: number): Promise<void> => {
+    return apiClient(`/api/admin/bookings/${id}/dispute`, {
+      method: "POST",
+    });
+  },
+
+  cancelBooking: async (id: number): Promise<void> => {
+    return apiClient(`/api/admin/bookings/${id}/cancel`, {
+      method: "POST",
+    });
+  },
+
   getUsers: async (): Promise<User[]> => {
     return apiClient<User[]>("/api/admin/users");
   },
