@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { 
   User as UserIcon, Mail, Phone, MapPin, CreditCard, 
@@ -9,14 +9,18 @@ import {
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { UserMe, AdditionalService } from "@/types";
+import { apiClient } from "@/shared/api/client";
 import CardModal from "@/components/profile/CardModal";
 import EditProfileModal from "@/components/profile/EditProfileModal";
+import BookingConfirmationModal from "@/components/bookings/BookingConfirmationModal";
+import { bookingService } from "@/features/bookings/services/booking.service";
+import { toast } from "sonner";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export default function ProfilePage() {
+function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTabParam = searchParams.get("tab");
@@ -28,26 +32,18 @@ export default function ProfilePage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [services, setServices] = useState<AdditionalService[]>([]);
 
+  const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+
   const fetchUserData = async () => {
     try {
-      const response = await fetch("/api/users/me", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          handleLogout();
-          return;
-        }
-        throw new Error("Failed to fetch user data");
-      }
-
-      const data = await response.json();
+      const data = await apiClient<UserMe>("/api/users/me");
       setUser(data);
-    } catch (error) {
-      console.error("Error fetching user data:", error);
+    } catch (error: any) {
+      if (error.status !== 401) {
+        console.error("Error fetching user data:", error);
+      }
+      // apiClient already handles logout for 401
     } finally {
       setLoading(false);
     }
@@ -76,12 +72,14 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function fetchServices() {
-      const response = await fetch('/api/services');
-      if (!response.ok) {
-        throw new Error('Failed to load services');
+      try {
+        const data = await apiClient<AdditionalService[]>('/api/services');
+        setServices(data);
+      } catch (error: any) {
+        if (error.status !== 401) {
+          console.error('Failed to load services', error);
+        }
       }
-      const data: AdditionalService[] = await response.json();
-      setServices(data);
     }
     fetchServices();
   }, []);
@@ -100,8 +98,21 @@ export default function ProfilePage() {
       if (response.ok) {
         fetchUserData();
       }
-    } catch (error) {
-      console.error("Error deleting card:", error);
+    } catch (error: any) {
+      if (error.status !== 401) {
+        console.error("Error deleting card:", error);
+      }
+    }
+  };
+
+  const handleCancelBooking = async (bookingId: number) => {
+    if (!confirm("Are you sure you want to cancel this booking?")) return;
+    try {
+      await bookingService.cancelBooking(bookingId);
+      toast.success("Booking cancelled successfully");
+      fetchUserData();
+    } catch (error: any) {
+      toast.error(`Failed to cancel booking: ${error.message}`);
     }
   };
 
@@ -233,9 +244,21 @@ export default function ProfilePage() {
                   <div className="text-center py-12 text-gray-500 font-medium">No bookings found.</div>
                 ) : (
                   user?.booking_history.map((b) => (
-                    <div key={b.id} className="flex flex-col md:flex-row items-center justify-between p-6 bg-gray-50 rounded-3xl border border-gray-100 gap-4">
+                    <div 
+                      key={b.id} 
+                      className={cn(
+                        "flex flex-col md:flex-row items-center justify-between p-6 bg-gray-50 rounded-3xl border border-gray-100 gap-4 transition-all",
+                        b.status === "pending" && "cursor-pointer hover:border-blue-300 hover:bg-blue-50/30"
+                      )}
+                      onClick={() => {
+                        if (b.status === "pending") {
+                          setSelectedBooking(b);
+                          setShowBookingModal(true);
+                        }
+                      }}
+                    >
                       <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm">
+                        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm overflow-hidden">
                           <img src={b.car_image} alt={b.car} className="w-full h-full object-cover" />
                         </div>
                         <div>
@@ -243,14 +266,35 @@ export default function ProfilePage() {
                           <h4 className="font-bold text-lg">{b.car}</h4>
                           <p className="text-sm text-gray-700">Period: {b.date}</p>
                           <p className="text-sm text-gray-700">Location: {b.location}</p>
-                          <p className="text-sm text-gray-700">Services: {services.filter(service => b.additional_services.map(serv => +serv).includes(service.id)).map(service => service.name).join(", ")}</p>
+                          <p className="text-sm text-gray-700">Services: {services.filter(service => b.additional_services.map((serv: string) => +serv).includes(service.id)).map(service => service.name).join(", ")}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-8">
                         <div className="text-right">
                           <div className="text-lg text-center font-bold">{b.price}</div>
-                          <span className={cn("status-badge", b.status)}>{b.status}</span>
+                          <span className={cn(
+                            "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
+                            b.status === 'pending' && "bg-gray-100 text-gray-700",
+                            b.status === 'confirmed' && "bg-blue-100 text-blue-700",
+                            b.status === 'active' && "bg-emerald-100 text-emerald-700",
+                            b.status === 'completed' && "bg-green-100 text-green-700",
+                            b.status === 'cancelled' && "bg-red-100 text-red-700",
+                            b.status === 'disputed' && "bg-orange-100 text-orange-700"
+                          )}>{b.status}</span>
                         </div>
+                        
+                        {["pending", "confirmed", "active"].includes(b.status) && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCancelBooking(b.raw_id);
+                            }}
+                            className="p-3 bg-white border border-gray-100 rounded-2xl text-red-500 hover:bg-red-50 transition-all shadow-sm"
+                            title="Cancel Booking"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))
@@ -331,6 +375,37 @@ export default function ProfilePage() {
           user={user} 
         />
       )}
+
+      {showBookingModal && selectedBooking && user && (
+        <BookingConfirmationModal 
+          isOpen={showBookingModal}
+          onClose={() => setShowBookingModal(false)}
+          bookingId={selectedBooking.raw_id}
+          totalPrice={selectedBooking.total_price}
+          user={user}
+          onSuccess={() => {
+            setShowBookingModal(false);
+            fetchUserData();
+          }}
+          onCancel={() => {
+            setShowBookingModal(false);
+            fetchUserData();
+          }}
+          onCardAdded={fetchUserData}
+        />
+      )}
     </main>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <ProfilePageContent />
+    </Suspense>
   );
 }
