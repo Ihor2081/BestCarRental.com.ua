@@ -31,15 +31,23 @@ class UserService:
         deals = await self.booking_repo.get_user_bookings(user.id)
         bookings = []
         for deal in deals:
+            car_name = "Unknown Car"
+            car_images = ""
+            if deal.car:
+                car_name = f"{deal.car.brand} {deal.car.model}"
+                car_images = deal.car.images
+                
             bookings.append(
                 {
                     "id": f"DRV-{deal.id}",
-                    "car": f"{deal.car.brand} {deal.car.model}",
-                    "car_image": deal.car.images,
+                    "raw_id": deal.id,
+                    "car": car_name,
+                    "car_image": car_images,
                     "date": f"{deal.start_time.strftime('%b %d')} - {deal.end_time.strftime('%b %d, %Y')}",
                     "location": deal.pick_up_location,
                     "status": deal.status,
                     "price": f"${deal.total_price:,.0f}",
+                    "total_price": float(deal.total_price),
                     "additional_services": (
                         deal.additional_services.split(", ")
                         if deal.additional_services

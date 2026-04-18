@@ -114,7 +114,31 @@ export function useAdminBookings() {
     fetchBookings();
   }, [fetchBookings]);
 
-  return { bookings, loading, error, refresh: fetchBookings };
+  const disputeBooking = async (id: number) => {
+    try {
+      await adminService.disputeBooking(id);
+      handleApiSuccess("Booking disputed successfully!");
+      fetchBookings();
+      return true;
+    } catch (err: any) {
+      handleApiError(err);
+      return false;
+    }
+  };
+
+  const cancelBooking = async (id: number) => {
+    try {
+      await adminService.cancelBooking(id);
+      handleApiSuccess("Booking cancelled successfully!");
+      fetchBookings();
+      return true;
+    } catch (err: any) {
+      handleApiError(err);
+      return false;
+    }
+  };
+
+  return { bookings, loading, error, refresh: fetchBookings, disputeBooking, cancelBooking };
 }
 
 export function useAdminUsers() {

@@ -4,7 +4,7 @@ import { CreateBookingRequest, BookingResponse } from "../types";
 
 export const bookingService = {
   createBooking: async (data: CreateBookingRequest): Promise<BookingResponse> => {
-    return apiClient<BookingResponse>("http://localhost:8000/api/bookings", {
+    return apiClient<BookingResponse>("/api/bookings", {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -16,6 +16,12 @@ export const bookingService = {
 
   cancelBooking: async (id: number): Promise<void> => {
     return apiClient(`/api/bookings/${id}/cancel`, {
+      method: "POST",
+    });
+  },
+
+  confirmBooking: async (id: number): Promise<void> => {
+    return apiClient(`/api/bookings/${id}/confirm`, {
       method: "POST",
     });
   },

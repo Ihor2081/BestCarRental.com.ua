@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Mail, ArrowRight } from "lucide-react";
+import { X, Mail } from "lucide-react";
 
 interface ForgotPasswordModalProps {
   onClose: () => void;
@@ -12,25 +12,9 @@ export default function ForgotPasswordModal({ onClose, onCodeSent }: ForgotPassw
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (cooldown > 0) {
-      timer = setInterval(() => {
-        setCooldown((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [cooldown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (cooldown > 0) return;
-
     setLoading(true);
     setError("");
 
@@ -41,19 +25,13 @@ export default function ForgotPasswordModal({ onClose, onCodeSent }: ForgotPassw
         body: JSON.stringify({ email })
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || "Failed to send code");
+        throw new Error(data.detail || "Failed to send reset code");
       }
 
-      setSuccess(true);
-      setCooldown(60);
-
-      // Wait a bit to show success message before moving to next step
-      setTimeout(() => {
-        onCodeSent(email);
-      }, 2000);
-
+      onCodeSent(email);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -73,19 +51,13 @@ export default function ForgotPasswordModal({ onClose, onCodeSent }: ForgotPassw
 
         <div className="p-8 pt-12">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-black tracking-tight mb-2">Forgot Password</h2>
-            <p className="text-gray-500">Enter your email to receive a verification code</p>
+            <h2 className="text-3xl font-black tracking-tight mb-2">Reset Password</h2>
+            <p className="text-gray-500">Enter your email to receive a reset code</p>
           </div>
 
           {error && (
             <div className="p-4 bg-red-50 text-red-600 rounded-2xl mb-6 text-sm font-bold">
               {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="p-4 bg-emerald-50 text-emerald-600 rounded-2xl mb-6 text-sm font-bold">
-              If the account exists, a verification code has been sent.
             </div>
           )}
 
@@ -104,11 +76,10 @@ export default function ForgotPasswordModal({ onClose, onCodeSent }: ForgotPassw
 
             <button
               type="submit"
-              disabled={loading || cooldown > 0}
-              className="w-full bg-black text-white py-4 rounded-2xl font-bold hover:bg-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              disabled={loading}
+              className="w-full bg-black text-white py-4 rounded-2xl font-bold hover:bg-gray-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-4"
             >
-              {loading ? "Sending..." : cooldown > 0 ? `Resend in ${cooldown}s` : "Send Code"}
-              {!loading && cooldown === 0 && <ArrowRight className="w-5 h-5" />}
+              {loading ? "Sending..." : "Send Reset Code"}
             </button>
           </form>
         </div>
