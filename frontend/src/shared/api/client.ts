@@ -1,4 +1,6 @@
 
+import { useAuthStore } from "@/store/auth.store";
+
 export interface ApiError {
   message: string;
   status?: number;
@@ -9,7 +11,11 @@ export async function apiClient<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  // Use store token but fallback to localStorage to avoid hydration race conditions
+  let token = useAuthStore.getState().token;
+  if (!token && typeof window !== "undefined") {
+    token = localStorage.getItem("token");
+  }
 
   const headers: HeadersInit = {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -28,21 +34,21 @@ export async function apiClient<T>(
 
   try {
     const response = await fetch(endpoint, config);
-    const data = await response.json().catch(() => ({}));
+    
+    // Handle empty responses
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : {};
 
     if (!response.ok) {
       if (response.status === 401 && typeof window !== "undefined") {
         // Auto logout on 401
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        // We could trigger a global logout here if we had the store
+        useAuthStore.getState().logout();
+        window.dispatchEvent(new Event("auth-change"));
       }
       
-      const error: ApiError = {
-        message: data.detail || "Something went wrong",
-        status: response.status,
-        detail: data.detail,
-      };
+      const error = new Error(data.detail || data.message || "Something went wrong") as any;
+      error.status = response.status;
+      error.detail = data.detail;
       throw error;
     }
 
