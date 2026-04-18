@@ -7,7 +7,7 @@ from app.schemas.service import ServiceResponse
 
 router = APIRouter(tags=["services"])
 
-@router.get("/", response_model=List[ServiceResponse])
+@router.get("", response_model=List[ServiceResponse])
 async def get_services(db: AsyncSession = Depends(get_db)):
     service_service = ServiceService(db)
     return await service_service.get_services()
