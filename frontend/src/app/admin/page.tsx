@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Car, Calendar, Users, Settings, 
   DollarSign, Search, Plus, Pencil, Trash2,
   TrendingUp, PieChart, Save, HelpCircle, Lock, RefreshCw,
-  Edit2, Eye
+  Edit2, Eye, AlertCircle
 } from "lucide-react";
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, 
@@ -22,15 +22,26 @@ import {
 import { Button } from "@/shared/ui/Button";
 import { Car as CarType } from "@/features/cars/types";
 import { User } from "@/features/users/types";
+import { useAuthStore } from "@/store/auth.store";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function AdminPage() {
+  const router = useRouter();
+  const { user, isAuthenticated } = useAuthStore();
   const [activeTab, setActiveTab] = useState("adminDashboard");
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== "admin") {
+      router.push("/");
+    }
+  }, [isAuthenticated, user, router]);
   
   const { stats, loading: statsLoading, refresh: refreshStats } = useAdminDashboard();
   const { cars, loading: carsLoading, deleteCar, refresh: refreshCars } = useAdminCars();
-  const { bookings, loading: bookingsLoading, refresh: refreshBookings } = useAdminBookings();
+  const { bookings, loading: bookingsLoading, refresh: refreshBookings, disputeBooking, cancelBooking } = useAdminBookings();
   const { users, loading: usersLoading, refresh: refreshUsers } = useAdminUsers();
   const { discounts, loading: discountsLoading, refresh: refreshDiscounts, deleteDiscount } = useAdminDiscounts();
   const { services, loading: servicesLoading, refresh: refreshServices, deleteService } = useAdminServices();
@@ -372,6 +383,7 @@ export default function AdminPage() {
               <option value="active">Active</option>
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
+              <option value="disputed">Disputed</option>
             </select>
           </div>
 
@@ -386,6 +398,7 @@ export default function AdminPage() {
                     <th className="p-5 text-[10px] font-bold uppercase tracking-wider text-gray-400">Dates</th>
                     <th className="p-5 text-[10px] font-bold uppercase tracking-wider text-gray-400">Total</th>
                     <th className="p-5 text-[10px] font-bold uppercase tracking-wider text-gray-400">Status</th>
+                    <th className="p-5 text-[10px] font-bold uppercase tracking-wider text-gray-400">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -394,10 +407,10 @@ export default function AdminPage() {
                       <tr key={b.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors">
                         <td className="p-5 font-bold text-gray-400 text-sm">#{b.id}</td>
                         <td className="p-5">
-                          <div className="font-bold text-sm">{users.find(u => u.id === b.user_id)?.name || "Customer"}</div>
+                          <div className="font-bold text-sm">{b.customer_name || "Customer"}</div>
                         </td>
                         <td className="p-5">
-                          <div className="font-bold text-sm">Vehicle #{b.car_id}</div>
+                          <div className="font-bold text-sm">{b.car_name || `Vehicle #${b.car_id}`}</div>
                         </td>
                         <td className="p-5 text-gray-500 font-medium text-xs">
                           {new Date(b.start_date).toLocaleDateString()} - {new Date(b.end_date).toLocaleDateString()}
@@ -409,10 +422,37 @@ export default function AdminPage() {
                             b.status === 'completed' ? 'bg-emerald-50 text-emerald-600' :
                             b.status === 'active' ? 'bg-blue-50 text-blue-600' :
                             b.status === 'cancelled' ? 'bg-red-50 text-red-600' :
+                            b.status === 'disputed' ? 'bg-orange-50 text-orange-600' :
                             'bg-gray-100 text-gray-500'
                           )}>
                             {b.status}
                           </span>
+                        </td>
+                        <td className="p-5">
+                          <div className="flex gap-2">
+                            {["pending", "confirmed", "active"].includes(b.status) && (
+                              <>
+                                <button 
+                                  onClick={() => {
+                                    if (confirm("Dispute this booking?")) disputeBooking(b.id);
+                                  }}
+                                  className="p-2 bg-orange-50 text-orange-600 rounded-lg hover:bg-orange-100 transition-colors"
+                                  title="Dispute"
+                                >
+                                  <AlertCircle className="w-4 h-4" />
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    if (confirm("Cancel this booking?")) cancelBooking(b.id);
+                                  }}
+                                  className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
+                                  title="Cancel"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
