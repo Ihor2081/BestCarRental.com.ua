@@ -10,7 +10,7 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
 - **Admin Dashboard**:
   - **Real-time Analytics**: Monitor monthly revenue, total bookings, and customer engagement.
   - **Fleet Management**: Full CRUD operations for vehicles with status tracking and **physical photo upload** support.
-  - **Booking Control**: Centralized view of all rentals with status filtering and search.
+  - **Booking Control**: Centralized view of all rentals with status filtering, search, and **cancellation/dispute management**.
   - **Customer Insights**: Detailed profiles with booking history and financial summaries.
   - **Features & Discounts**: Manage rental duration discounts and additional services (insurance, GPS, etc.) with dynamic icons. **Discounts are automatically applied and displayed on product pages based on rental duration.**
 
@@ -25,9 +25,9 @@ DriveAway is a modern, full-stack car rental platform built with **Next.js** for
   - **Payment Methods**: Manage multiple saved cards with strict validation (16-digit numeric check and future expiration date enforcement) and the ability to delete existing ones.
 - **JWT-Based Authentication**: Secure user registration and login using JWT tokens and bcrypt password hashing.
 - **Protected Routes**: User profiles and booking features are protected and require a valid session.
-- **Dynamic UI**: Header and navigation adapt in real-time to the user's authentication state.
+- **Dynamic UI**: Header and navigation adapt in real-time to the user's authentication state **with robust hydration handling and cross-component synchronization**.
 - **Responsive Design**: Optimized for both desktop and mobile devices.
-- **Clean UI**: Modern aesthetic with subtle animations and clear typography.
+- **Polished Experience**: Modern aesthetic with toast notifications (`sonner`) and smooth animations.
 
 ## 🛠️ Tech Stack
 
@@ -126,7 +126,7 @@ You can verify the status of the application and database using these endpoints:
 ## 📂 Project Structure
 
 The project follows a monorepo architecture with a clear separation of concerns:
-
+```
 backend/
 │
 ├── alembic.ini
@@ -245,7 +245,7 @@ frontend/
 ├── .gitignore
 └── README.MD
 
-
+```
 ---
 
 ## 📡 API Endpoints
@@ -294,6 +294,8 @@ frontend/
   - `POST /cars/upload`: Upload a physical photo for a vehicle.
 - **Bookings**:
   - `GET /bookings`: Centralized view of all system bookings with filters.
+  - `POST /bookings/{booking_id}/cancel`: Admin-level booking cancellation.
+  - `POST /bookings/{booking_id}/dispute`: Flag a booking for dispute resolution.
 - **Customers**:
   - `GET /users`: List all registered customers with search.
   - `GET /users/{user_id}`: View detailed customer profile and history.

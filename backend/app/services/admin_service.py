@@ -108,9 +108,9 @@ class AdminService:
 
         # Fleet by Category
         fleet_by_cat = await self.db.execute(
-            select(Car.fuel_type, func.count(Car.id)).group_by(Car.fuel_type)
+            select(Car.category, func.count(Car.id)).group_by(Car.category)
         )
-        fleet_by_category = [{"category": row[0].value, "count": row[1]} for row in fleet_by_cat.all()]
+        fleet_by_category = [{"category": row[0] or "Uncategorized", "count": row[1]} for row in fleet_by_cat.all()]
 
         return {
             "total_revenue": total_revenue,
@@ -247,7 +247,40 @@ class AdminService:
         
         return {"url": f"/static/uploads/cars/{unique_filename}"}
 
+    async def refresh_booking_statuses(self):
+        bookings = await self.booking_repo.get_bookings_for_status_refresh()
+        from datetime import datetime, timezone, timedelta
+        now = datetime.now(timezone.utc)
+        fifteen_mins_ago = now - timedelta(minutes=15)
+        
+        for booking in bookings:
+            new_status = None
+            
+            # Ensure datetimes are aware for comparison
+            start_time = booking.start_time
+            if start_time and start_time.tzinfo is None:
+                start_time = start_time.replace(tzinfo=timezone.utc)
+                
+            end_time = booking.end_time
+            if end_time and end_time.tzinfo is None:
+                end_time = end_time.replace(tzinfo=timezone.utc)
+                
+            created_at = booking.created_at
+            if created_at and created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
+
+            if booking.status == DealStatusEnum.confirmed and start_time <= now and end_time > now:
+                new_status = DealStatusEnum.active
+            elif booking.status == DealStatusEnum.active and now > end_time:
+                new_status = DealStatusEnum.completed
+            elif booking.status == DealStatusEnum.pending and created_at < fifteen_mins_ago:
+                new_status = DealStatusEnum.cancelled
+            
+            if new_status:
+                await self.booking_repo.update(booking, {"status": new_status})
+
     async def get_bookings(self, status: Optional[DealStatusEnum] = None, search: Optional[str] = None):
+        await self.refresh_booking_statuses()
         deals = await self.booking_repo.get_admin_bookings(status, search)
         return [
             {
@@ -261,6 +294,26 @@ class AdminService:
             }
             for deal in deals
         ]
+
+    async def dispute_booking(self, booking_id: int):
+        booking = await self.booking_repo.get(booking_id)
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+            
+        if booking.status not in [DealStatusEnum.pending, DealStatusEnum.confirmed, DealStatusEnum.active]:
+            raise HTTPException(status_code=400, detail="Cannot dispute booking in current status")
+            
+        return await self.booking_repo.update(booking, {"status": DealStatusEnum.disputed})
+
+    async def cancel_booking(self, booking_id: int):
+        booking = await self.booking_repo.get(booking_id)
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+            
+        if booking.status not in [DealStatusEnum.pending, DealStatusEnum.confirmed, DealStatusEnum.active]:
+            raise HTTPException(status_code=400, detail="Cannot cancel booking in current status")
+            
+        return await self.booking_repo.update(booking, {"status": DealStatusEnum.cancelled})
 
     async def get_customers(self, search: Optional[str] = None):
         from sqlalchemy import String

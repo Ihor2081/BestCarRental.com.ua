@@ -21,21 +21,17 @@ body {
   background: white;
 }
 
-/* Custom Status Badges */
-.status-badge {
-  @apply px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider;
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
 }
-
-.status-badge.upcoming { @apply bg-blue-100 text-blue-700; }
-.status-badge.completed { @apply bg-green-100 text-green-700; }
-.status-badge.active { @apply bg-emerald-100 text-emerald-700; }
-.status-badge.cancelled { @apply bg-red-100 text-red-700; }
-
-/* Status Tags for Fleet */
-.status-tag {
-  @apply px-2 py-0.5 rounded text-[10px] font-bold uppercase;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
-
-.status-tag.available { @apply bg-green-100 text-green-700; }
-.status-tag.rented { @apply bg-blue-100 text-blue-700; }
-.status-tag.maintenance { @apply bg-orange-100 text-orange-700; }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db;
+}

@@ -9,7 +9,7 @@ from app.services.booking_service import BookingService
 
 router = APIRouter(tags=["bookings"])
 
-@router.post("/", response_model=BookingResponse)
+@router.post("", response_model=BookingResponse)
 async def create_booking(
     booking_data: BookingCreate,
     db: AsyncSession = Depends(get_db),
@@ -18,7 +18,7 @@ async def create_booking(
     booking_service = BookingService(db)
     return await booking_service.create_booking(user, booking_data)
 
-@router.get("/", response_model=List[BookingResponse])
+@router.get("", response_model=List[BookingResponse])
 async def get_user_bookings(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user)
@@ -43,3 +43,12 @@ async def cancel_booking(
 ):
     booking_service = BookingService(db)
     return await booking_service.cancel_booking(booking_id, user.id)
+
+@router.post("/{booking_id}/confirm")
+async def confirm_booking(
+    booking_id: int,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user)
+):
+    booking_service = BookingService(db)
+    return await booking_service.confirm_booking(booking_id, user.id)

@@ -54,6 +54,24 @@ async def get_admin_bookings(
     admin_service = AdminService(db)
     return await admin_service.get_bookings(status, search)
 
+@router.post("/bookings/{booking_id}/dispute")
+async def dispute_booking(
+    booking_id: int,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user)
+):
+    admin_service = AdminService(db)
+    return await admin_service.dispute_booking(booking_id)
+
+@router.post("/bookings/{booking_id}/cancel")
+async def cancel_booking(
+    booking_id: int,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(get_admin_user)
+):
+    admin_service = AdminService(db)
+    return await admin_service.cancel_booking(booking_id)
+
 @router.get("/users", response_model=List[CustomerResponse])
 async def get_admin_users(
     search: Optional[str] = None,
