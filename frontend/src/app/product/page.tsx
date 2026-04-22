@@ -12,6 +12,12 @@ import type { AdditionalService, Discount } from "@/types";
 import type { Car } from "@/features/cars/types";
 import { bookingService } from "@/features/bookings/services/booking.service";
 import type { CreateBookingRequest } from "@/features/bookings/types";
+import BookingConfirmationModal from "@/components/bookings/BookingConfirmationModal";
+import { UserMe } from "@/types";
+import { useAuthStore } from "@/store/auth.store";
+
+import { apiClient } from "@/shared/api/client";
+import { toast } from "sonner";
 
 function ProductPageFallback() {
   return (
@@ -40,6 +46,24 @@ function ProductPageContent() {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
   const [discountsLoading, setDiscountsLoading] = useState(true);
+
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [pendingBookingId, setPendingBookingId] = useState<number | null>(null);
+  const [fullUser, setFullUser] = useState<UserMe | null>(null);
+  const { isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      apiClient<UserMe>("/api/users/me")
+        .then(data => setFullUser(data))
+        .catch(err => {
+          // Silent fail for 401 as apiClient handles logout
+          if (err.status !== 401) {
+            console.error("Failed to fetch user profile", err);
+          }
+        });
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (!Number.isInteger(carId) || carId <= 0) {
@@ -87,14 +111,10 @@ function ProductPageContent() {
       try {
         setServicesLoading(true);
         setServicesError(null);
-        const response = await fetch('/api/services');
-        if (!response.ok) {
-          throw new Error('Failed to load services');
-        }
-        const data: AdditionalService[] = await response.json();
+        const data = await apiClient<AdditionalService[]>('/api/services');
         setServices(data);
-      } catch (err) {
-        setServicesError((err as Error).message);
+      } catch (err: any) {
+        setServicesError(err.message);
       } finally {
         setServicesLoading(false);
       }
@@ -106,14 +126,12 @@ function ProductPageContent() {
     async function fetchDiscounts() {
       try {
         setDiscountsLoading(true);
-        const response = await fetch('/api/discounts');
-        if (!response.ok) {
-          throw new Error('Failed to load discounts');
-        }
-        const data: Discount[] = await response.json();
+        const data = await apiClient<Discount[]>('/api/discounts');
         setDiscounts(data);
-      } catch (err) {
-        console.error('Error fetching discounts:', err);
+      } catch (err: any) {
+        if (err.status !== 401) {
+          console.error('Error fetching discounts:', err);
+        }
       } finally {
         setDiscountsLoading(false);
       }
@@ -197,7 +215,7 @@ function ProductPageContent() {
     let total = 0;
     for (let service of services) {
       if (selectedServices.includes(service.id)) {
-        total += parseFloat(service.price) * daysNumber;
+        total += Number(service.price) * daysNumber;
       }
     }
     return total;
@@ -210,9 +228,12 @@ function ProductPageContent() {
 
   const discountAmount = useMemo(() => {
     const applicableDiscounts = discounts.filter(d => d.min_days <= daysNumber && (d.max_days === null || daysNumber <= d.max_days));
-    const amount = applicableDiscounts.reduce((sum, d) => sum + (totalPriceWithoutDiscounts * d.discount_percent / 100), 0);
-    return amount;
-  }, [discounts, totalPriceWithoutDiscounts]);
+    if (applicableDiscounts.length === 0) return 0;
+    
+    // Find highest discount percentage
+    const maxDiscount = Math.max(...applicableDiscounts.map(d => d.discount_percent));
+    return (totalPriceWithoutDiscounts * maxDiscount) / 100;
+  }, [discounts, daysNumber, totalPriceWithoutDiscounts]);
 
   const capitalizeText = (text: string) => {
     if (!text) return "";
@@ -244,6 +265,14 @@ function ProductPageContent() {
   const formattedPrice = Number(car.price_per_day).toFixed(2);
 
   const handleBookNow = async () => {
+    console.log("Book Now clicked. isAuthenticated:", isAuthenticated);
+    console.log("Auth Store State:", useAuthStore.getState());
+    
+    if (!isAuthenticated) {
+      toast.error("Please login to book a car");
+      return;
+    }
+    
     setBookingLoading(true);
     const bookingData: CreateBookingRequest = {
       car_id: carId,
@@ -254,12 +283,24 @@ function ProductPageContent() {
     };
 
     try {
-      await bookingService.createBooking(bookingData);
-      router.push('/profile?tab=bookings');
+      const response = await bookingService.createBooking(bookingData);
+      setPendingBookingId(response.id);
+      setShowBookingModal(true);
     } catch (error: any) {
-      alert(`Booking failed: ${error?.message || 'An unknown error occurred.'}`);
+      toast.error(`Booking failed: ${error?.message || 'An unknown error occurred.'}`);
     } finally {
       setBookingLoading(false);
+    }
+  };
+
+  const handleCardAdded = async () => {
+    try {
+      const data = await apiClient<UserMe>("/api/users/me");
+      setFullUser(data);
+    } catch (err: any) {
+      if (err.status !== 401) {
+        console.error("Failed to refresh user profile", err);
+      }
     }
   };
 
@@ -503,6 +544,25 @@ function ProductPageContent() {
           </div>
         </div>
       </div>
+
+      {showBookingModal && pendingBookingId && fullUser && (
+        <BookingConfirmationModal 
+          isOpen={showBookingModal}
+          onClose={() => setShowBookingModal(false)}
+          bookingId={pendingBookingId}
+          totalPrice={totalPriceWithoutDiscounts - discountAmount}
+          user={fullUser}
+          onSuccess={() => {
+            setShowBookingModal(false);
+            router.push('/profile?tab=bookings');
+          }}
+          onCancel={() => {
+            setShowBookingModal(false);
+            router.push('/profile?tab=bookings');
+          }}
+          onCardAdded={handleCardAdded}
+        />
+      )}
     </main>
   );
 }

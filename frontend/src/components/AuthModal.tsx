@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, Mail, Lock, User, Phone, FileText, MapPin, Eye, EyeOff } from "lucide-react";
+import { useAuthStore } from "@/store/auth.store";
 import ForgotPasswordModal from "./ForgotPasswordModal";
 import ResetPasswordModal from "./ResetPasswordModal";
 import VerifyEmailModal from "./VerifyEmailModal";
@@ -78,8 +79,8 @@ export default function AuthModal({ onClose, onSuccess }: AuthModalProps) {
       }
 
       if (isLogin) {
-        localStorage.setItem("token", data.access_token);
-        localStorage.setItem("user", JSON.stringify(data.user));
+        useAuthStore.getState().setAuth(data.user, data.access_token);
+        window.dispatchEvent(new Event("auth-change"));
         onSuccess();
       } else {
         // Registration success -> show verification modal

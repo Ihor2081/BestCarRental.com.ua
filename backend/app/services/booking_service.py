@@ -34,24 +34,33 @@ class BookingService:
                 detail="Cannot create booking for a car that is not available",
             )
         
-        overlap = await self.booking_repo.has_overlap(
-           booking_data.car_id,
-           booking_data.start_time,
-           booking_data.end_time,
+        
+        # Check for overlapping bookings
+        has_overlap = await self.booking_repo.check_overlap(
+            booking_data.car_id, booking_data.start_time, booking_data.end_time
         )
-
-        if overlap:
-           raise HTTPException(status_code=400, detail="Booking overlap")
+        if has_overlap:
+            raise HTTPException(
+                status_code=400,
+                detail="Car is already booked for the selected time range",
+            )
 
         services = await self.service_repo.get_all_ordered()
         discounts = await self.discount_repo.get_all_ordered()
-        booking_duration = max(1, (booking_data.end_time - booking_data.start_time).days)
+        booking_duration = max(
+            1,
+            (booking_data.end_time - booking_data.start_time).days
+        )
+            
+
+            
         services_price = self.calculate_services_price(
             services, booking_data.additional_services, booking_duration
         )
 
         booking_dict = booking_data.dict()
         booking_dict["user_id"] = user.id
+        booking_dict["status"] = DealStatusEnum.pending
         booking_dict["additional_services"] = ", ".join(
             map(str, booking_data.additional_services)
         )
@@ -62,10 +71,72 @@ class BookingService:
         booking = await self.booking_repo.create(booking_dict)
         return booking
 
+    async def refresh_booking_statuses(self):
+        bookings = await self.booking_repo.get_bookings_for_status_refresh()
+        from datetime import datetime, timezone, timedelta
+        now = datetime.now(timezone.utc)
+        fifteen_mins_ago = now - timedelta(minutes=15)
+        
+        for booking in bookings:
+            new_status = None
+            
+            # Ensure datetimes are aware for comparison
+            start_time = booking.start_time
+            if start_time and start_time.tzinfo is None:
+                start_time = start_time.replace(tzinfo=timezone.utc)
+                
+            end_time = booking.end_time
+            if end_time and end_time.tzinfo is None:
+                end_time = end_time.replace(tzinfo=timezone.utc)
+                
+            created_at = booking.created_at
+            if created_at and created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
+
+            if booking.status == DealStatusEnum.confirmed and start_time <= now and end_time > now:
+                new_status = DealStatusEnum.active
+            elif booking.status == DealStatusEnum.active and now > end_time:
+                new_status = DealStatusEnum.completed
+            elif booking.status == DealStatusEnum.pending and created_at < fifteen_mins_ago:
+                new_status = DealStatusEnum.cancelled
+            
+            if new_status:
+                await self.booking_repo.update(booking, {"status": new_status})
+
     async def get_user_bookings(self, user_id: int):
+        await self.refresh_booking_statuses()
         return await self.booking_repo.get_user_bookings(user_id)
 
+    async def confirm_booking(self, booking_id: int, user_id: int):
+        booking = await self.booking_repo.get(booking_id)
+        if not booking or booking.user_id != user_id:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        
+        if booking.status != DealStatusEnum.pending:
+            raise HTTPException(status_code=400, detail="Only pending bookings can be confirmed")
+            
+        # Re-check overlap just in case
+        has_overlap = await self.booking_repo.check_overlap(
+            booking.car_id, booking.start_time, booking.end_time, exclude_booking_id=booking.id
+        )
+        if has_overlap:
+            await self.booking_repo.update(booking, {"status": DealStatusEnum.cancelled})
+            raise HTTPException(status_code=400, detail="Car is no longer available for these dates")
+            
+        return await self.booking_repo.update(booking, {"status": DealStatusEnum.confirmed})
+
+    async def dispute_booking(self, booking_id: int):
+        booking = await self.booking_repo.get(booking_id)
+        if not booking:
+            raise HTTPException(status_code=404, detail="Booking not found")
+            
+        if booking.status not in [DealStatusEnum.pending, DealStatusEnum.confirmed, DealStatusEnum.active]:
+            raise HTTPException(status_code=400, detail="Cannot dispute booking in current status")
+            
+        return await self.booking_repo.update(booking, {"status": DealStatusEnum.disputed})
+
     async def get_booking_by_id(self, booking_id: int, user_id: int):
+        await self.refresh_booking_statuses()
         booking = await self.booking_repo.get(booking_id)
         if not booking or booking.user_id != user_id:
             raise HTTPException(status_code=404, detail="Booking not found")
@@ -88,6 +159,7 @@ class BookingService:
     def calculate_services_price(
         self, services, selected_ids, booking_duration
     ) -> float:
+        selected_ids = selected_ids or []
         total = 0.0
         for service in services:
             if service.id in selected_ids:
@@ -99,7 +171,7 @@ class BookingService:
     def calculate_discount_amount(
         self, total_price_without_discounts, booking_duration, discounts
     ) -> float:
-        total_discount = 0.0
+        max_discount_percent = 0.0
 
         # Filter applicable discounts based on booking duration
         for discount in discounts:
@@ -107,13 +179,11 @@ class BookingService:
             if discount.min_days <= booking_duration and (
                 discount.max_days is None or booking_duration <= discount.max_days
             ):
-                # Calculate discount amount for this discount
-                discount_amount = total_price_without_discounts * (
-                    float(discount.discount_percent) / 100
-                )
-                total_discount += discount_amount
+                # Pick the highest discount percentage
+                if float(discount.discount_percent) > max_discount_percent:
+                    max_discount_percent = float(discount.discount_percent)
 
-        return total_discount
+        return total_price_without_discounts * (max_discount_percent / 100)
 
     def calculate_total_price(
         self, car: Car, booking_duration: int, services_price: float, discounts: list

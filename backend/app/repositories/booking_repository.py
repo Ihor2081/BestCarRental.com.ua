@@ -63,15 +63,63 @@ class BookingRepository(BaseRepository[Deal]):
         select(Deal).where(
             and_(
                 Deal.car_id == car_id,
-
-                # Ігноруємо скасовані бронювання
                 Deal.status != DealStatusEnum.cancelled,
-
-                # 🔥 Основна умова overlap
                 Deal.start_time < end,
                 Deal.end_time > start,
             )
         )
-    )
-
+      )
       return result.scalars().first() is not None
+
+
+    async def check_overlap(
+       self,
+       car_id: int,
+       start_time: Any,
+       end_time: Any,
+       exclude_booking_id: Optional[int] = None,
+    ) -> bool:
+       query = select(Deal).where(
+         and_(
+            Deal.car_id == car_id,
+            Deal.status != DealStatusEnum.cancelled,
+            Deal.start_time < end_time,
+            Deal.end_time > start_time,
+         )
+       )
+
+       if exclude_booking_id:
+          query = query.where(Deal.id != exclude_booking_id)
+
+       result = await self.db.execute(query)
+       return result.scalars().first() is not None
+
+
+    async def get_bookings_for_status_refresh(self) -> List[Deal]:
+       from datetime import datetime, timezone, timedelta
+
+       now = datetime.now(timezone.utc).replace(tzinfo=None)
+       fifteen_mins_ago = now - timedelta(minutes=15)
+
+       query = select(Deal).where(
+          or_(
+              and_(
+                Deal.status == DealStatusEnum.confirmed,
+                Deal.start_time <= now,
+                Deal.end_time > now,
+              ),
+              and_(
+                Deal.status == DealStatusEnum.active,
+                now > Deal.end_time,
+              ),
+              and_(
+                Deal.status == DealStatusEnum.pending,
+                Deal.created_at < fifteen_mins_ago,
+              ),
+          )
+       )
+
+       result = await self.db.execute(query)
+       return result.scalars().all()
+
+    
