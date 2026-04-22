@@ -58,38 +58,68 @@ class BookingRepository(BaseRepository[Deal]):
         
         return total_deals, active_deals, total_spent
 
-    async def check_overlap(self, car_id: int, start_time: Any, end_time: Any, exclude_booking_id: Optional[int] = None) -> bool:
-        query = select(Deal).where(
-            Deal.car_id == car_id,
-            Deal.status.in_([DealStatusEnum.pending, DealStatusEnum.confirmed, DealStatusEnum.active]),
-            or_(
-                and_(Deal.start_time <= start_time, Deal.end_time > start_time),
-                and_(Deal.start_time < end_time, Deal.end_time >= end_time),
-                and_(Deal.start_time >= start_time, Deal.end_time <= end_time)
+    async def has_overlap(self, car_id: int, start, end) -> bool:
+      result = await self.db.execute(
+        select(Deal).where(
+            and_(
+                Deal.car_id == car_id,
+                Deal.status != DealStatusEnum.cancelled,
+                Deal.start_time < end,
+                Deal.end_time > start,
             )
         )
-        
-        if exclude_booking_id:
-            query = query.where(Deal.id != exclude_booking_id)
-            
-        result = await self.db.execute(query)
-        return result.scalar_one_or_none() is not None
+      )
+      return result.scalars().first() is not None
+
+
+    async def check_overlap(
+       self,
+       car_id: int,
+       start_time: Any,
+       end_time: Any,
+       exclude_booking_id: Optional[int] = None,
+    ) -> bool:
+       query = select(Deal).where(
+         and_(
+            Deal.car_id == car_id,
+            Deal.status != DealStatusEnum.cancelled,
+            Deal.start_time < end_time,
+            Deal.end_time > start_time,
+         )
+       )
+
+       if exclude_booking_id:
+          query = query.where(Deal.id != exclude_booking_id)
+
+       result = await self.db.execute(query)
+       return result.scalars().first() is not None
+
 
     async def get_bookings_for_status_refresh(self) -> List[Deal]:
-        # Bookings that are confirmed but should be active (start_time <= now <= end_time)
-        # Bookings that are active but should be completed (now > end_time)
-        # Bookings that are pending and older than 15 minutes (should be cancelled)
-        from datetime import datetime, timezone, timedelta
-        # For SQLite, naive datetimes are often safer for comparison if stored as naive
-        now = datetime.now(timezone.utc).replace(tzinfo=None)
-        fifteen_mins_ago = now - timedelta(minutes=15)
-        
-        query = select(Deal).where(
-            or_(
-                and_(Deal.status == DealStatusEnum.confirmed, Deal.start_time <= now, Deal.end_time > now),
-                and_(Deal.status == DealStatusEnum.active, now > Deal.end_time),
-                and_(Deal.status == DealStatusEnum.pending, Deal.created_at < fifteen_mins_ago)
-            )
-        )
-        result = await self.db.execute(query)
-        return result.scalars().all()
+       from datetime import datetime, timezone, timedelta
+
+       now = datetime.now(timezone.utc).replace(tzinfo=None)
+       fifteen_mins_ago = now - timedelta(minutes=15)
+
+       query = select(Deal).where(
+          or_(
+              and_(
+                Deal.status == DealStatusEnum.confirmed,
+                Deal.start_time <= now,
+                Deal.end_time > now,
+              ),
+              and_(
+                Deal.status == DealStatusEnum.active,
+                now > Deal.end_time,
+              ),
+              and_(
+                Deal.status == DealStatusEnum.pending,
+                Deal.created_at < fifteen_mins_ago,
+              ),
+          )
+       )
+
+       result = await self.db.execute(query)
+       return result.scalars().all()
+
+    

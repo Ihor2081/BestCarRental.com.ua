@@ -21,15 +21,20 @@ class BookingService:
 
     async def create_booking(self, user: User, booking_data: BookingCreate):
         car = await self.car_repo.get(booking_data.car_id)
+        
         if not car:
             raise HTTPException(status_code=404, detail="Car not found")
-
+        
+        if booking_data.end_time <= booking_data.start_time:
+            raise HTTPException(status_code=400, detail="Invalid date range")
+        
         if car.status not in [CarStatusEnum.available]:
             raise HTTPException(
                 status_code=400,
                 detail="Cannot create booking for a car that is not available",
             )
-
+        
+        
         # Check for overlapping bookings
         has_overlap = await self.booking_repo.check_overlap(
             booking_data.car_id, booking_data.start_time, booking_data.end_time
@@ -42,9 +47,12 @@ class BookingService:
 
         services = await self.service_repo.get_all_ordered()
         discounts = await self.discount_repo.get_all_ordered()
-        booking_duration = (booking_data.end_time - booking_data.start_time).days
-        if booking_duration < 1:
-            booking_duration = 1
+        booking_duration = max(
+            1,
+            (booking_data.end_time - booking_data.start_time).days
+        )
+            
+
             
         services_price = self.calculate_services_price(
             services, booking_data.additional_services, booking_duration
@@ -151,6 +159,7 @@ class BookingService:
     def calculate_services_price(
         self, services, selected_ids, booking_duration
     ) -> float:
+        selected_ids = selected_ids or []
         total = 0.0
         for service in services:
             if service.id in selected_ids:
