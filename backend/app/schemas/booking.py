@@ -1,5 +1,5 @@
-from pydantic import BaseModel, ConfigDict
-from typing import Optional
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from typing import Optional, Any
 from decimal import Decimal
 from datetime import datetime
 
@@ -13,6 +13,18 @@ class BookingBase(BaseModel):
     additional_services: Optional[str] = None
     status: str = "pending"
 
+    @field_validator('total_price')
+    @classmethod
+    def total_price_must_be_positive(cls, v: Decimal) -> Decimal:
+        if v < 0:
+            raise ValueError('Total price cannot be negative')
+        return v
+
+    @model_validator(mode='after')
+    def check_dates(self) -> 'BookingBase':
+        if self.start_time and self.end_time and self.end_time <= self.start_time:
+            raise ValueError('End time must be after start time')
+        return self
 
 class BookingCreate(BaseModel):
     car_id: int
@@ -21,6 +33,11 @@ class BookingCreate(BaseModel):
     pick_up_location: str
     additional_services: Optional[list] = None
 
+    @model_validator(mode='after')
+    def check_dates(self) -> 'BookingCreate':
+        if self.start_time and self.end_time and self.end_time <= self.start_time:
+            raise ValueError('End time must be after start time')
+        return self
 
 class BookingUpdate(BaseModel):
     status: Optional[str] = None
